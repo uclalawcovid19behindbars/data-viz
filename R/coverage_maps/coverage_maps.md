@@ -14,7 +14,8 @@ collecting and reporting facility-level data on COVID-19 in prisons,
 jails, and other correctional centers. We also collect information about
 pandemic-related prison and jail releases, legal filings and court
 orders bearing on the safety of incarcerated people, and grassroots
-organizing campaigns and fundraisers.
+organizing campaigns and fundraisers – available
+[here](https://docs.google.com/spreadsheets/u/2/d/1X6uJkXXS-O6eePLxw2e4JeRtM41uPZ2eRcOA_HkPVTk/edit#gid=1641553906).
 
 ## Our Process
 
@@ -45,15 +46,17 @@ County](https://www.cookcountysheriff.org/covid-19-cases-at-ccdoc/), and
 [Hennepin
 County](https://www.hennepinsheriff.org/jail-warrants/jail-information/COVID-19).
 
-<img src="coverage_maps_files/figure-gfm/unnamed-chunk-3-1.png" style="display: block; margin: auto;" />
+## Number of Facilities by Jurisdiction
+
+<img src="coverage_maps_files/figure-gfm/fac-by-jurisdiction-1.png" style="display: block; margin: auto;" />
 
 We are continuously adding to and refining our scrapers. Where possible,
 we have also retrospectively added COVID-19 data for facilities using
 digital archives. We are currently in the process of cleaning our
-historical scraped data and integrating facility population data to more
-readily compute COVID-19 rates across facilities over the course of the
-pandemic. This data is available for several states [on
-GitHub](https://github.com/uclalawcovid19behindbars/historical-data/tree/main/data).
+historical scraped data and integrating population data to more readily
+compute COVID-19 rates across facilities over the course of the
+pandemic. This data is available for several states [on GitHub
+here](https://github.com/uclalawcovid19behindbars/historical-data/tree/main/data).
 
 ## Our Data
 
@@ -67,9 +70,20 @@ for incarcerated people and staff at the facility level:
 
 Not all jurisdictions report COVID-19 metrics at the facility level.
 Some Department of Corrections only report statewide totals, and others
-do not report any data for certain metrics. The maps below summarize our
-data availability across state facilities for our four core metrics. For
-example, [California’s Department of
+do not report any data for certain metrics. Authorities also vary
+dramatically in how they define the metrics that they report. We do our
+best to standardize these variables, but comparing data across
+jurisdictions and over time should be done with caution.
+
+**Note**: Jurisdictions are continuously updating how, where, and
+whether they update their data. We do our best to collect as much data
+as possible, but our data availability is subject to change.
+
+### Data Availability for Incarcerated Residents in State Facilities
+
+The maps below summarize the data availability for our four core metrics
+among incarcerated people in state facilities. For example,
+[California’s Department of
 Corrections](https://www.cdcr.ca.gov/covid19/population-status-tracking/)
 reports facility-level data on cumulative COVID-19 cases for residents,
 while [Florida’s Department of
@@ -79,17 +93,24 @@ Prisons](https://www.bop.gov/coronavirus/) reports facility-level data
 on cumulative cases and deaths, but not active cases or tests
 administered.
 
-**Note**: Jurisdictions are continuously updating how, where, and
-whether they update their data. We do our best to collect as much data
-as possible, but our data availability is subject to change. Authorities
-also vary dramatically in how they define the metrics that they report.
-We do our best to standardize these variables, but comparing data across
-jurisdictions and over time should be done with caution.
-
-### Data Availability for Incarcerated Residents in State Facilities
-
-<img src="coverage_maps_files/figure-gfm/unnamed-chunk-5-1.png" style="display: block; margin: auto;" />
+<img src="coverage_maps_files/figure-gfm/resident-maps-1.png" style="display: block; margin: auto;" />
 
 ### Data Availability for Staff in State Facilities
 
-<img src="coverage_maps_files/figure-gfm/unnamed-chunk-6-1.png" style="display: block; margin: auto;" />
+The maps below summarize the data availability for cumulative COVID-19
+cases and deaths among staff in state facilities. We try to include data
+only for correctional staff who work within facility walls and exclude
+administrative staff, who typically do not work on site in prisons and
+jails. However, few agencies distinguish between different types of
+staff in their reporting. In these cases, we include data for all staff
+reported by the agency.
+
+<img src="coverage_maps_files/figure-gfm/staff-maps-1.png" style="display: block; margin: auto;" />
+
+## Directory Structure
+
+## Data Dictionary
+
+## Citations
+
+## License
