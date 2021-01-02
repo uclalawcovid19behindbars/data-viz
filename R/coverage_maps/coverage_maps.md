@@ -46,7 +46,7 @@ County](https://www.cookcountysheriff.org/covid-19-cases-at-ccdoc/), and
 [Hennepin
 County](https://www.hennepinsheriff.org/jail-warrants/jail-information/COVID-19).
 
-## Number of Facilities by Jurisdiction
+#### Number of Facilities by Jurisdiction
 
 <img src="coverage_maps_files/figure-gfm/fac-by-jurisdiction-1.png" style="display: block; margin: auto;" />
 
@@ -79,7 +79,7 @@ jurisdictions and over time should be done with caution.
 whether they update their data. We do our best to accurately collect as
 much data as possible, but our data availability is subject to change.
 
-### Data Availability for Incarcerated Residents in State Facilities
+#### Data Availability for Incarcerated Residents in State Facilities
 
 The maps below summarize the data availability for our four core metrics
 among incarcerated people in state facilities. For example,
@@ -95,7 +95,7 @@ administered.
 
 <img src="coverage_maps_files/figure-gfm/resident-maps-1.png" style="display: block; margin: auto;" />
 
-### Data Availability for Staff in State Facilities
+#### Data Availability for Staff in State Facilities
 
 The maps below summarize the data availability for cumulative COVID-19
 cases and deaths among staff in state facilities. We try to include data
@@ -133,7 +133,7 @@ staff.
 | `Residents.Quarantine` | Cumulative number of incarcerated individuals in quarantine from COVID-19                                                                                      |
 | `Staff.Quarantine`     | Cumulative number of staff in quarantine from COVID-19                                                                                                         |
 | `Residents.Active`     | Non-cumulative number of incarcerated individuals infected with COVID-19                                                                                       |
-| `Residents.Population` | Facility population if reported by source                                                                                                                      |
+| `Residents.Population` | Facility population if reported by the source                                                                                                                  |
 | `hifld_id`             | The facility’s corresponding [Homeland Infrastructure Foundation-Level Data](https://hifld-geoplatform.opendata.arcgis.com/datasets/prison-boundaries/data) ID |
 | `Notes`                | Notes from UCLA Law COVID-19 Behind Bars staff                                                                                                                 |
 

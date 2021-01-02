@@ -25,19 +25,30 @@ library(tidyverse)
 scrape_df <- behindbarstools::read_scrape_data()
 ```
 
-## Number of Facilities by Jurisdiction
+#### Number of Facilities by Jurisdiction
 
 ``` {r fac-by-jurisdiction, echo=FALSE, message=FALSE, fig.width=8, fig.height=1.5, fig.align="center", dpi=500}
 # Plot facilities by jurisdiction 
-scrape_df %>% mutate(jurisdiction = stringr::str_to_title(jurisdiction)) %>% 
+scrape_df %>% 
+    mutate(jurisdiction = stringr::str_to_title(jurisdiction)) %>% 
     group_by(jurisdiction) %>% 
     count() %>% 
     ggplot(aes(x = jurisdiction, y = n)) + 
-    geom_segment(aes(x = jurisdiction, xend = jurisdiction, y = 0, yend = n), size = 1.5, color = "#4C6788") + 
-    geom_point(color = "#4C6788", size = 4.0) + 
-    geom_text(aes(label = scales::comma(n)), color = "#555526", size = 3.5, hjust = -0.5, vjust = -0.8) + 
+    geom_segment(
+        aes(x = jurisdiction, xend = jurisdiction, y = 0, yend = n), 
+        size = 1.5, 
+        color = "#4C6788") + 
+    geom_point(
+        color = "#4C6788", size = 4.0) + 
+    geom_text(
+        aes(label = scales::comma(n)), 
+        color = "#555526", 
+        size = 3.5, 
+        hjust = -0.5, vjust = -0.8) + 
     coord_flip() + 
-    scale_y_continuous(label = scales::comma, limits = c(0, 1500)) + 
+    scale_y_continuous(
+        label = scales::comma, 
+        limits = c(0, 1500)) + 
     theme_behindbars(base_size = 14) + 
     theme(axis.title.y = element_blank()) 
 ```
@@ -59,10 +70,10 @@ Not all jurisdictions report COVID-19 metrics at the facility level. Some Depart
 ``` {r map-setup, echo=FALSE, message=FALSE}
 # Load and process hex grid geojson 
 # Source: https://www.r-graph-gallery.com/328-hexbin-map-of-the-usa.html
-spdf <- geojsonio::geojson_read("us_states_hexgrid.geojson",  what = "sp")
+spdf <- geojsonio::geojson_read("us_states_hexgrid.geojson", what = "sp")
 
 spdf@data = spdf@data %>% 
-  mutate(google_name = gsub(" \\(United States\\)", "", google_name))
+    mutate(google_name = gsub(" \\(United States\\)", "", google_name))
 
 spdf_fortified <- broom::tidy(spdf, region = "google_name")
 centers <- cbind.data.frame(data.frame(
@@ -144,7 +155,7 @@ plot_hex_map <- function(df) {
 }
 ```
 
-### Data Availability for Incarcerated Residents in State Facilities 
+#### Data Availability for Incarcerated Residents in State Facilities 
 The maps below summarize the data availability for our four core metrics among incarcerated people in state facilities. For example, [California's Department of Corrections](https://www.cdcr.ca.gov/covid19/population-status-tracking/) reports facility-level data on cumulative COVID-19 cases for residents, while [Florida's Department of Corrections](http://www.dc.state.fl.us/comm/covid-19.html) only reports statewide totals. The [Federal Bureau of Prisons](https://www.bop.gov/coronavirus/) reports facility-level data on cumulative cases and deaths, but not active cases or tests administered. 
 
 ``` {r resident-maps, echo=FALSE, message=FALSE, fig.width=10, fig.height=6.5, fig.align="center", dpi=500}
@@ -167,7 +178,7 @@ ggpubr::ggarrange(map_Residents.Confirmed, map_Residents.Deaths,
                   common.legend = TRUE)
 ```
 
-### Data Availability for Staff in State Facilities 
+#### Data Availability for Staff in State Facilities 
 The maps below summarize the data availability for cumulative COVID-19 cases and deaths among staff in state facilities. We try to include data only for correctional staff who work within facility walls and exclude administrative staff. When agencies don't distinguish between different types of staff in their reporting, we include data for all reported staff.
 
 ``` {r staff-maps, echo=FALSE, message=FALSE, fig.width=10, fig.height=3.5, fig.align="center", dpi=500}
@@ -209,7 +220,7 @@ ggpubr::ggarrange(map_Staff.Confirmed, map_Staff.Deaths,
 | `Residents.Quarantine` | Cumulative number of incarcerated individuals in quarantine from COVID-19                                              |
 | `Staff.Quarantine`     | Cumulative number of staff in quarantine from COVID-19                                                                 |
 | `Residents.Active`     | Non-cumulative number of incarcerated individuals infected with COVID-19                                               |
-| `Residents.Population` | Facility population if reported by source                                                                              |
+| `Residents.Population` | Facility population if reported by the source                                                                          |
 | `hifld_id`             | The facility's corresponding [Homeland Infrastructure Foundation-Level Data](https://hifld-geoplatform.opendata.arcgis.com/datasets/prison-boundaries/data) ID |
 | `Notes`                | Notes from UCLA Law COVID-19 Behind Bars staff                                                                         |
 
