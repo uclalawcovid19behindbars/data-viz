@@ -76,8 +76,8 @@ best to standardize these variables, but comparing data across
 jurisdictions and over time should be done with caution.
 
 **Note**: Jurisdictions are continuously updating how, where, and
-whether they update their data. We do our best to collect as much data
-as possible, but our data availability is subject to change.
+whether they update their data. We do our best to accurately collect as
+much data as possible, but our data availability is subject to change.
 
 ### Data Availability for Incarcerated Residents in State Facilities
 
@@ -100,10 +100,9 @@ administered.
 The maps below summarize the data availability for cumulative COVID-19
 cases and deaths among staff in state facilities. We try to include data
 only for correctional staff who work within facility walls and exclude
-administrative staff, who typically do not work on site in prisons and
-jails. However, few agencies distinguish between different types of
-staff in their reporting. In these cases, we include data for all staff
-reported by the agency.
+administrative staff. When agencies don’t distinguish between different
+types of staff in their reporting, we include data for all reported
+staff.
 
 <img src="coverage_maps_files/figure-gfm/staff-maps-1.png" style="display: block; margin: auto;" />
 
@@ -111,6 +110,57 @@ reported by the agency.
 
 ## Data Dictionary
 
+| Variable               | Description                                                                                                                                                    |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ID`                   | Integer ID that uniquely identifies every facility                                                                                                             |
+| `jurisdiction`         | Whether the facility falls under `state`, `county` or `federal` jurisdiction                                                                                   |
+| `State`                | State where the facility is located                                                                                                                            |
+| `Name`                 | Facility name                                                                                                                                                  |
+| `Date`                 | Date data was scraped (not necessarily date last updated by the reporting source)                                                                              |
+| `source`               | Source from which the data was scraped                                                                                                                         |
+| `Residents.Confirmed`  | Cumulative number of incarcerated individuals infected with COVID-19                                                                                           |
+| `Staff.Confirmed`      | Cumulative number of staff infected with COVID-19                                                                                                              |
+| `Residents.Deaths`     | Cumulative number of incarcerated individuals who died from COVID-19                                                                                           |
+| `Staff.Deaths`         | Cumulative number of staff who died from COVID-19                                                                                                              |
+| `Residents.Recovered`  | Cumulative number of incarcerated individuals who recovered from COVID-19                                                                                      |
+| `Staff.Recovered`      | Cumulative number of staff who recovered from COVID-19                                                                                                         |
+| `Residents.Tadmin`     | Non-cumulative number of incarcerated individuals tested for COVID-19                                                                                          |
+| `Staff.Tested`         | Cumulative number of staff tested for COVID-19                                                                                                                 |
+| `Residents.Negative`   | Cumulative number of incarcerated individuals who tested negative for COVID-19                                                                                 |
+| `Staff.Negative`       | Cumulative number of staff who tested negative for COVID-19                                                                                                    |
+| `Residents.Pending`    | Cumulative number of incarcerated individuals with pending test results for COVID-19                                                                           |
+| `Staff.Pending`        | Cumulative number of staff with pending test results for COVID-19                                                                                              |
+| `Residents.Quarantine` | Cumulative number of incarcerated individuals in quarantine from COVID-19                                                                                      |
+| `Staff.Quarantine`     | Cumulative number of staff in quarantine from COVID-19                                                                                                         |
+| `Residents.Active`     | Non-cumulative number of incarcerated individuals infected with COVID-19                                                                                       |
+| `Residents.Population` | Facility population if reported by source                                                                                                                      |
+| `hifld_id`             | The facility’s corresponding [Homeland Infrastructure Foundation-Level Data](https://hifld-geoplatform.opendata.arcgis.com/datasets/prison-boundaries/data) ID |
+| `Notes`                | Notes from UCLA Law COVID-19 Behind Bars staff                                                                                                                 |
+
+Additional geographic fields: `Address`, `Zipcode`, `City`, `County`,
+`Latitude`, `Longitude`, `County.FIPS`.
+
 ## Citations
 
+Citations for academic publications and research reports:
+
+> Sharon Dolovich, Aaron Littman, Kalind Parish, Grace DiLaura, Chase
+> Hommeyer, Michael Everett, Hope Johnson, Neal Marquez, and Erika
+> Tyagi. UCLA Law Covid-19 Behind Bars Data Project: Jail/Prison
+> Confirmed Cases Dataset \[date you downloaded the data\]. UCLA Law,
+> 2020, <https://uclacovidbehindbars.org/>.
+
+Citations for media outlets, policy briefs, and online resources:
+
+> UCLA Law Covid-19 Behind Bars Data Project,
+> <https://uclacovidbehindbars.org/>.
+
 ## License
+
+Our data is licensed under a [Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International
+License](https://creativecommons.org/licenses/by-nc-sa/4.0/). That means
+that you must give appropriate credit, provide a link to the license,
+and indicate if changes were made. You may not use our work for
+commercial purposes, which means anything primarily intended for or
+directed toward commercial advantage or monetary compensation.
