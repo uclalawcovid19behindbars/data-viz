@@ -46,7 +46,7 @@ County](https://www.cookcountysheriff.org/covid-19-cases-at-ccdoc/), and
 [Hennepin
 County](https://www.hennepinsheriff.org/jail-warrants/jail-information/COVID-19).
 
-#### Number of Facilities by Jurisdiction
+### Number of Facilities by Jurisdiction
 
 <img src="coverage_maps_files/figure-gfm/fac-by-jurisdiction-1.png" style="display: block; margin: auto;" />
 
@@ -57,6 +57,11 @@ historical scraped data and integrating population data to more readily
 compute COVID-19 rates across facilities over the course of the
 pandemic. This data is available for several states [on GitHub
 here](https://github.com/uclalawcovid19behindbars/historical-data/tree/main/data).
+
+We are also developing an R package
+[`behindbarstools`](https://github.com/uclalawcovid19behindbars/behindbarstools),
+which includes a variety of functions to help pull, clean, wrangle, and
+visualize our data.
 
 ## Our Data
 
@@ -79,7 +84,7 @@ jurisdictions and over time should be done with caution.
 whether they update their data. We do our best to accurately collect as
 much data as possible, but our data availability is subject to change.
 
-#### Data Availability for Incarcerated Residents in State Facilities
+### Data Availability for Incarcerated Residents in State Facilities
 
 The maps below summarize the data availability for our four core metrics
 among incarcerated people in state facilities. For example,
@@ -95,7 +100,7 @@ administered.
 
 <img src="coverage_maps_files/figure-gfm/resident-maps-1.png" style="display: block; margin: auto;" />
 
-#### Data Availability for Staff in State Facilities
+### Data Availability for Staff in State Facilities
 
 The maps below summarize the data availability for cumulative COVID-19
 cases and deaths among staff in state facilities. We try to include data

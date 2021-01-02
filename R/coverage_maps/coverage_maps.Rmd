@@ -25,7 +25,7 @@ library(tidyverse)
 scrape_df <- behindbarstools::read_scrape_data()
 ```
 
-#### Number of Facilities by Jurisdiction
+### Number of Facilities by Jurisdiction
 
 ``` {r fac-by-jurisdiction, echo=FALSE, message=FALSE, fig.width=8, fig.height=1.5, fig.align="center", dpi=500}
 # Plot facilities by jurisdiction 
@@ -54,6 +54,8 @@ scrape_df %>%
 ```
 
 We are continuously adding to and refining our scrapers. Where possible, we have also retrospectively added COVID-19 data for facilities using digital archives. We are currently in the process of cleaning our historical scraped data and integrating  population data to more readily compute COVID-19 rates across facilities over the course of the pandemic. This data is available for several states [on GitHub here](https://github.com/uclalawcovid19behindbars/historical-data/tree/main/data). 
+
+We are also developing an R package [`behindbarstools`](https://github.com/uclalawcovid19behindbars/behindbarstools), which includes a variety of functions to help pull, clean, wrangle, and visualize our data.  
 
 ## Our Data 
 Our core dataset includes the following metrics – reported separately for incarcerated people and staff at the facility level: 
@@ -155,7 +157,7 @@ plot_hex_map <- function(df) {
 }
 ```
 
-#### Data Availability for Incarcerated Residents in State Facilities 
+### Data Availability for Incarcerated Residents in State Facilities 
 The maps below summarize the data availability for our four core metrics among incarcerated people in state facilities. For example, [California's Department of Corrections](https://www.cdcr.ca.gov/covid19/population-status-tracking/) reports facility-level data on cumulative COVID-19 cases for residents, while [Florida's Department of Corrections](http://www.dc.state.fl.us/comm/covid-19.html) only reports statewide totals. The [Federal Bureau of Prisons](https://www.bop.gov/coronavirus/) reports facility-level data on cumulative cases and deaths, but not active cases or tests administered. 
 
 ``` {r resident-maps, echo=FALSE, message=FALSE, fig.width=10, fig.height=6.5, fig.align="center", dpi=500}
@@ -178,7 +180,7 @@ ggpubr::ggarrange(map_Residents.Confirmed, map_Residents.Deaths,
                   common.legend = TRUE)
 ```
 
-#### Data Availability for Staff in State Facilities 
+### Data Availability for Staff in State Facilities 
 The maps below summarize the data availability for cumulative COVID-19 cases and deaths among staff in state facilities. We try to include data only for correctional staff who work within facility walls and exclude administrative staff. When agencies don't distinguish between different types of staff in their reporting, we include data for all reported staff.
 
 ``` {r staff-maps, echo=FALSE, message=FALSE, fig.width=10, fig.height=3.5, fig.align="center", dpi=500}
