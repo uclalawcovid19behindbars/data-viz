@@ -1,20 +1,33 @@
 library(behindbarstools)
 library(tidyverse)
 
-scrape_df <- read_scrape_data(T, T)
+scrape_df <- read_scrape_data(T, T, state = "California")
 
 # Recent spikes - active cases 
 plt1 <- plot_recent_fac_increases(scrape_df = scrape_df,
                           plot_days = 30, 
-                          num_fac = 5, 
+                          num_fac = 3, 
                           annotate = TRUE, 
                           metric = "Residents.Active") + 
     labs(color = "Facility", 
          y = "Reported Active Cases", 
          title = "Facilities with Recent Spikes in Active COVID-19 Cases")
 
-ggsave("spikes_1.11.20.svg", plt1, width = 16, height = 10)
-ggsave("spikes_1.11.20.png", plt1, width = 16, height = 10)
+ggsave("spikes_CA_active_1.11.20.svg", plt1, width = 16, height = 10)
+ggsave("spikes_CA_active_1.11.20.png", plt1, width = 16, height = 10)
+
+plt2 <- plot_recent_fac_increases(scrape_df = scrape_df,
+                                  plot_days = 30, 
+                                  num_fac = 3, 
+                                  annotate = TRUE, 
+                                  metric = "Residents.Confirmed") + 
+    labs(color = "Facility", 
+         y = "Reported Cumulative Cases", 
+         title = "Facilities with Recent Spikes in Cumulative COVID-19 Cases")
+
+ggsave("spikes_CA_cumulative_1.11.20.svg", plt2, width = 16, height = 10)
+ggsave("spikes_CA_cumulative_1.11.20.png", plt2, width = 16, height = 10)
+
 
 # CMC CA Men's Colony - active 
 plt3 <- scrape_df %>% 
@@ -42,7 +55,7 @@ historical_CA <- read.csv("https://raw.githubusercontent.com/uclalawcovid19behin
 plt4 <- historical_CA %>% 
     filter(Name == "CMC CALIFORNIA MENS COLONY") %>% 
     mutate(Date = lubridate::ymd(Date)) %>% 
-    mutate(last_value = if_else(Date == max(Date), as.character(Residents.Confirmed), NA_character_)) %>%
+    mutate(last_value = if_else(Date == max(Date) & Residents.Active == 933, as.character(Residents.Confirmed), NA_character_)) %>%
     ggplot(aes(x = Date, y = Residents.Confirmed, label = last_value)) + 
     geom_line(size = 2.0, color = "#D7790F") + 
     geom_area(aes(x = Date, y = Residents.Confirmed), fill = "#D7790F", alpha = 0.5) +
