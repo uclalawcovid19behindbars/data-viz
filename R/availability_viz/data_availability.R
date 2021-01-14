@@ -3,14 +3,14 @@ library(behindbarstools)
 
 scrape_df <- behindbarstools::read_scrape_data()
 
-# Plot facilities by jurisdiction 
-plt1 <- scrape_df %>% 
-    mutate(jurisdiction = stringr::str_to_title(jurisdiction)) %>% 
-    group_by(jurisdiction) %>% 
+# Plot facilities by jurisdiction (lollipop)
+jur_lolli <- scrape_df %>% 
+    mutate(Jurisdiction = stringr::str_to_title(Jurisdiction)) %>% 
+    group_by(Jurisdiction) %>% 
     count() %>% 
-    ggplot(aes(x = jurisdiction, y = n)) + 
+    ggplot(aes(x = Jurisdiction, y = n)) + 
     geom_segment(
-        aes(x = jurisdiction, xend = jurisdiction, y = 0, yend = n), 
+        aes(x = Jurisdiction, xend = Jurisdiction, y = 0, yend = n), 
         size = 1.5, 
         color = "#4C6788") + 
     geom_point(
@@ -27,8 +27,35 @@ plt1 <- scrape_df %>%
     behindbarstools::theme_behindbars(base_size = 14) + 
     theme(axis.title.y = element_blank()) 
 
-ggsave("facilities-by-jurisdiction.svg", plt1, width = 8, height = 3)
+ggsave("facilities-by-jurisdiction.svg", jur_lolli, width = 8, height = 3)
 
+# Plot facilities by jurisdiction (donut)
+plot_df <- scrape_df %>% 
+    mutate(Jurisdiction = stringr::str_to_title(Jurisdiction)) %>% 
+    group_by(Jurisdiction) %>% 
+    count() %>% 
+    ungroup() %>% 
+    mutate(fraction = n / sum(n), 
+           ymax = cumsum(fraction), 
+           ymin = c(0, head(ymax, n = -1)),
+           label_position = (ymax + ymin) / 2, 
+           Jurisdiction = factor(Jurisdiction, 
+                                 levels = c("State", "Federal", "County", "Immigration")))
+
+jur_donut <- ggplot(plot_df, 
+       aes(ymax = ymax, ymin = ymin, xmax = 4, xmin = 3, fill = Jurisdiction, label = n)) + 
+    geom_rect(color = "white") + 
+    geom_text(x = 3.5, aes(y = label_position, label = n), size = 4) + 
+    coord_polar(theta = "y") +
+    xlim(c(2, 4)) + 
+    behindbarstools::theme_map_behindbars(base_size = 14) + 
+    scale_fill_manual(
+        values = c("#D7790F", "#82CAA4", "#4C6788", "#AE91A8")) + 
+    theme(legend.position = "right")
+
+ggsave("facilities-by-jurisdiction_donut.svg", jur_donut, width = 8, height = 3)
+
+# Coverage maps 
 # Source: https://www.r-graph-gallery.com/328-hexbin-map-of-the-usa.html
 spdf <- geojsonio::geojson_read("us_states_hexgrid.geojson", what = "sp")
 
@@ -44,7 +71,7 @@ centers <- cbind.data.frame(data.frame(
 # Set plotting aesthetics 
 fill_bb <- c("facility" = "#D7790F", 
              "statewide" = "#82CAA4", 
-             "unavailable" = "#C7C6C5")
+             "unavailable" = "#E7F1E2")
 
 theme_map_behindbars <- function(
     base_size = 24, base_family = "Helvetica") {
@@ -71,7 +98,8 @@ get_plotting_data <- function(metric) {
     
     # States with facility-level data 
     facility_df <- scrape_df %>% 
-        filter(jurisdiction == "state") %>% 
+        filter(Date > as.Date("2021-01-01")) %>% 
+        filter(Jurisdiction == "state") %>% 
         filter(Name != "STATEWIDE") %>% 
         filter(!is.na(!!sym(metric))) %>% 
         select(State) %>% 
@@ -80,7 +108,8 @@ get_plotting_data <- function(metric) {
     
     # States with statewide data 
     statewide_df <- scrape_df %>% 
-        filter(jurisdiction == "state") %>% 
+        filter(Date > as.Date("2021-01-01")) %>% 
+        filter(Jurisdiction == "state") %>% 
         filter(Name == "STATEWIDE") %>% 
         filter(!is.na(!!sym(metric))) %>% 
         select(State) %>% 
@@ -135,11 +164,11 @@ map_Residents.Tadmin <-
     plot_hex_map(get_plotting_data("Residents.Tadmin")) + 
     labs(title = "COVID-19 Tests Administered")
 
-plt2 <- ggpubr::ggarrange(map_Residents.Confirmed, map_Residents.Deaths, 
+res_map <- ggpubr::ggarrange(map_Residents.Confirmed, map_Residents.Deaths, 
                   map_Residents.Active, map_Residents.Tadmin, 
                   common.legend = TRUE)
 
-ggsave("residents-maps.svg", plt2, width = 8, height = 8)
+ggsave("residents-maps.svg", res_map, width = 8, height = 8)
 
 # Staff coverage maps 
 map_Staff.Confirmed <- 
@@ -150,8 +179,8 @@ map_Staff.Deaths <-
     plot_hex_map(get_plotting_data("Staff.Deaths")) + 
     labs(title = "Cumulative COVID-19 Deaths")
 
-plt3 <- ggpubr::ggarrange(map_Staff.Confirmed, map_Staff.Deaths, 
+staff_map <- ggpubr::ggarrange(map_Staff.Confirmed, map_Staff.Deaths, 
                   common.legend = TRUE)
 
-ggsave("staff-maps.svg", plt3, width = 8, height = 4)
+ggsave("staff-maps.svg", staff_map, width = 8, height = 4)
 
