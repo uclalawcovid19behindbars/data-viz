@@ -51,9 +51,10 @@ jur_donut <- ggplot(plot_df,
     behindbarstools::theme_map_behindbars(base_size = 14) + 
     scale_fill_manual(
         values = c("#D7790F", "#82CAA4", "#4C6788", "#AE91A8")) + 
-    theme(legend.position = "right")
+    theme(legend.position = "right") + 
+    labs(caption = "1.22.21")
 
-ggsave("facilities-by-jurisdiction_donut.svg", jur_donut, width = 8, height = 3)
+ggsave("facilities-by-jurisdiction_donut_1.22.21.svg", jur_donut, width = 8, height = 3)
 
 # Coverage maps 
 # Source: https://www.r-graph-gallery.com/328-hexbin-map-of-the-usa.html
@@ -152,8 +153,11 @@ map_Residents.Confirmed <-
     plot_hex_map(get_plotting_data("Residents.Confirmed")) + 
     labs(title = "Cumulative COVID-19 Cases")
 
+# TODO: Undo hot fix for Alaska and Wisconsin when we include the data!!  
 map_Residents.Deaths <- 
-    plot_hex_map(get_plotting_data("Residents.Deaths")) + 
+    plot_hex_map(get_plotting_data("Residents.Deaths") %>% 
+                     mutate(level = case_when(id %in% c("Alaska", "Wisconsin") ~ "statewide", 
+                                              TRUE ~ level))) + 
     labs(title = "Cumulative COVID-19 Deaths")
 
 map_Residents.Active <- 
@@ -162,13 +166,14 @@ map_Residents.Active <-
 
 map_Residents.Tadmin <- 
     plot_hex_map(get_plotting_data("Residents.Tadmin")) + 
-    labs(title = "COVID-19 Tests Administered")
+    labs(title = "COVID-19 Tests Administered", 
+         caption = "1.22.21")
 
 res_map <- ggpubr::ggarrange(map_Residents.Confirmed, map_Residents.Deaths, 
                   map_Residents.Active, map_Residents.Tadmin, 
-                  common.legend = TRUE)
+                  common.legend = TRUE) 
 
-ggsave("residents-maps.svg", res_map, width = 8, height = 8)
+ggsave("residents-maps_1.22.21.svg", res_map, width = 8, height = 8)
 
 # Staff coverage maps 
 map_Staff.Confirmed <- 
@@ -177,10 +182,11 @@ map_Staff.Confirmed <-
 
 map_Staff.Deaths <- 
     plot_hex_map(get_plotting_data("Staff.Deaths")) + 
-    labs(title = "Cumulative COVID-19 Deaths")
+    labs(title = "Cumulative COVID-19 Deaths", 
+         caption = "1.22.21")
 
 staff_map <- ggpubr::ggarrange(map_Staff.Confirmed, map_Staff.Deaths, 
                   common.legend = TRUE)
 
-ggsave("staff-maps.svg", staff_map, width = 8, height = 4)
+ggsave("staff-maps_1.22.21.svg", staff_map, width = 8, height = 4)
 
