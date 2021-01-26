@@ -51,10 +51,9 @@ jur_donut <- ggplot(plot_df,
     behindbarstools::theme_map_behindbars(base_size = 14) + 
     scale_fill_manual(
         values = c("#D7790F", "#82CAA4", "#4C6788", "#AE91A8")) + 
-    theme(legend.position = "right") + 
-    labs(caption = "1.22.21")
+    theme(legend.position = "right") 
 
-ggsave("facilities-by-jurisdiction_donut_1.22.21.svg", jur_donut, width = 8, height = 3)
+ggsave("facilities-by-jurisdiction_donut.svg", jur_donut, width = 8, height = 3)
 
 # Coverage maps 
 # Source: https://www.r-graph-gallery.com/328-hexbin-map-of-the-usa.html
@@ -99,7 +98,7 @@ get_plotting_data <- function(metric) {
     
     # States with facility-level data 
     facility_df <- scrape_df %>% 
-        filter(Date > as.Date("2021-01-01")) %>% 
+        filter(Date > Sys.Date() - 14) %>% 
         filter(Jurisdiction == "state") %>% 
         filter(Name != "STATEWIDE") %>% 
         filter(!is.na(!!sym(metric))) %>% 
@@ -109,7 +108,7 @@ get_plotting_data <- function(metric) {
     
     # States with statewide data 
     statewide_df <- scrape_df %>% 
-        filter(Date > as.Date("2021-01-01")) %>% 
+        filter(Date > Sys.Date() - 14) %>% 
         filter(Jurisdiction == "state") %>% 
         filter(Name == "STATEWIDE") %>% 
         filter(!is.na(!!sym(metric))) %>% 
@@ -153,12 +152,8 @@ map_Residents.Confirmed <-
     plot_hex_map(get_plotting_data("Residents.Confirmed")) + 
     labs(title = "Cumulative COVID-19 Cases")
 
-# TODO: Undo hot fix for Alaska and Wisconsin when we include the data!!  
 map_Residents.Deaths <- 
-    plot_hex_map(get_plotting_data("Residents.Deaths") %>% 
-                     mutate(level = case_when(id == "Wisconsin" ~ "facility", 
-                                              id == "Alaska" ~ "statewide",
-                                              TRUE ~ level))) + 
+    plot_hex_map(get_plotting_data("Residents.Deaths")) + 
     labs(title = "Cumulative COVID-19 Deaths")
 
 map_Residents.Active <- 
@@ -167,14 +162,13 @@ map_Residents.Active <-
 
 map_Residents.Tadmin <- 
     plot_hex_map(get_plotting_data("Residents.Tadmin")) + 
-    labs(title = "COVID-19 Tests Administered", 
-         caption = "1.22.21")
+    labs(title = "COVID-19 Tests Administered")
 
 res_map <- ggpubr::ggarrange(map_Residents.Confirmed, map_Residents.Deaths, 
                   map_Residents.Active, map_Residents.Tadmin, 
                   common.legend = TRUE) 
 
-ggsave("residents-maps_1.22.21.svg", res_map, width = 8, height = 8)
+ggsave("residents-maps.svg", res_map, width = 8, height = 8)
 
 # Staff coverage maps 
 map_Staff.Confirmed <- 
@@ -183,11 +177,10 @@ map_Staff.Confirmed <-
 
 map_Staff.Deaths <- 
     plot_hex_map(get_plotting_data("Staff.Deaths")) + 
-    labs(title = "Cumulative COVID-19 Deaths", 
-         caption = "1.22.21")
+    labs(title = "Cumulative COVID-19 Deaths")
 
 staff_map <- ggpubr::ggarrange(map_Staff.Confirmed, map_Staff.Deaths, 
                   common.legend = TRUE)
 
-ggsave("staff-maps_1.22.21.svg", staff_map, width = 8, height = 4)
+ggsave("staff-maps.svg", staff_map, width = 8, height = 4)
 
