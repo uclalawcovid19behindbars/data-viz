@@ -27,7 +27,7 @@ ca_jail_plot <- plot_recent_fac_increases(ca_jails, annotate = T, plot_days = 30
        title = "Recent Spikes in COVID-19 Cases") + 
   theme(plot.tag.position = c(0.8, 0.02)) 
 
-ggsave("sacramento.png", ca_jail_plot, width = 12, height = 10)
+ggsave("sacramento.svg", ca_jail_plot, width = 14, height = 10)
 
 
 
@@ -85,7 +85,7 @@ ca_hcf_full <- ca %>%
   theme_behindbars() +
   labs(y = "Estimated Active Cases") +
   ggtitle("Monitoring Facility Outbreaks", str_to_title(facility_sel))
-ggsave("ca_hcf_full.png", ca_hcf_full)
+ggsave("ca_hcf_full.svg", ca_hcf_full, width = 14, height = 10)
 
 # option 1, zoom in on post-November 
 ca_hcf_filtered <- ca %>%
@@ -105,7 +105,7 @@ ca_hcf_filtered <- ca %>%
   theme_behindbars() +
   labs(y = "Estimated Active Cases") +
   ggtitle("Monitoring Facility Outbreaks", str_to_title(facility_sel))
-ggsave("ca_hcf_filtered.png", ca_hcf_filtered)
+ggsave("ca_hcf_filtered.svg", ca_hcf_filtered, width = 14, height = 10)
 
 # option 2
 facility_sel <- "CALIFORNIA CORRECTIONAL CENTER" # compelling, especially november forwards
@@ -126,7 +126,7 @@ ca_corr <- ca %>%
   theme_behindbars() +
   labs(y = "Estimated Active Cases") +
   ggtitle("Monitoring Facility Outbreaks", str_to_title(facility_sel))
-ggsave("ca_corr.png", ca_corr)
+ggsave("ca_corr.svg", ca_corr)
 
 # option 3
 facility_sel <- "AVENAL STATE PRISON" # this one's strange bc outbreak got under control among incarcerated pop but not staff 
