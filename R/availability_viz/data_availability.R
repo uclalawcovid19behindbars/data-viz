@@ -156,7 +156,8 @@ map_Residents.Confirmed <-
 # TODO: Undo hot fix for Alaska and Wisconsin when we include the data!!  
 map_Residents.Deaths <- 
     plot_hex_map(get_plotting_data("Residents.Deaths") %>% 
-                     mutate(level = case_when(id %in% c("Alaska", "Wisconsin") ~ "statewide", 
+                     mutate(level = case_when(id == "Wisconsin" ~ "facility", 
+                                              id == "Alaska" ~ "statewide",
                                               TRUE ~ level))) + 
     labs(title = "Cumulative COVID-19 Deaths")
 
