@@ -37,6 +37,7 @@ state <- rbind(facility, statewide) %>%
 county <- scrape_df %>% 
     filter(Jurisdiction == "county") %>% 
     filter(State != "Texas") %>% 
+    filter(State != "Wisconsin") %>% 
     group_by(Name, State, source, Jurisdiction) %>% 
     summarise_all(funs(sum(!is.na(.)))) %>% 
     select(Name, Jurisdiction, State, source, Residents.Confirmed:Residents.Tested) %>% 
@@ -48,6 +49,15 @@ tx_jails <- scrape_df %>%
     group_by(State, source, Jurisdiction) %>% 
     summarise_all(funs(sum(!is.na(.)))) %>% 
     mutate(Name = "TEXAS JAILS") %>% 
+    select(Name, Jurisdiction, State, source, Residents.Confirmed:Residents.Tested) %>% 
+    mutate_if(is.numeric, funs(if_else(. > 0, "Facility-Level", NA_character_)))
+
+milwaukee_jails <- scrape_df %>% 
+    filter(Jurisdiction == "county") %>% 
+    filter(State == "Wisconsin") %>% 
+    group_by(State, source, Jurisdiction) %>% 
+    summarise_all(funs(sum(!is.na(.)))) %>% 
+    mutate(Name = "MILWAUKEE COUNTY JAILS") %>% 
     select(Name, Jurisdiction, State, source, Residents.Confirmed:Residents.Tested) %>% 
     mutate_if(is.numeric, funs(if_else(. > 0, "Facility-Level", NA_character_)))
     
@@ -74,6 +84,7 @@ immigration <- scrape_df %>%
 combined <- bind_rows(
     county, 
     tx_jails, 
+    milwaukee_jails, 
     federal, 
     immigration, 
     state) %>% 
@@ -82,5 +93,5 @@ combined <- bind_rows(
     mutate(Jurisdiction = factor(Jurisdiction, levels = c("state", "federal", "immigration", "county"))) %>% 
     arrange(Jurisdiction, State, Name)
 
-write.table(combined, "data-availability-by-jurisdiction.csv", 
+write.table(combined, "data-availability-by-jurisdiction.csv",
             sep = ",", col.names = TRUE, row.names = FALSE, na = "")
