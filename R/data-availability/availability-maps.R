@@ -1,7 +1,9 @@
 library(tidyverse)
 library(behindbarstools)
 
+# Load data 
 scrape_df <- behindbarstools::read_scrape_data()
+machine_readable <- read.csv("machine-readability-by-jurisdiction.csv")
 
 # Plot facilities by jurisdiction (lollipop)
 jur_lolli <- scrape_df %>% 
@@ -95,7 +97,7 @@ theme_map_behindbars <- function(
 
 # Get plotting data (with hex grid) 
 get_plotting_data <- function(metric) {
-    
+
     # States with facility-level data 
     facility_df <- scrape_df %>% 
         filter(Date > Sys.Date() - 14) %>% 
@@ -121,11 +123,15 @@ get_plotting_data <- function(metric) {
         full_join(statewide_df, by = c("State")) %>% 
         mutate(level = coalesce(level.x, level.y)) %>% 
         select(State, level) %>% 
-        mutate(State = replace(State, State == "DC", "District of Columbia"))
+        mutate(State = replace(State, State == "DC", "District of Columbia")) %>% 
+        left_join(machine_readable %>% 
+                      filter(Jurisdiction == "state"), by = c("State"))
     
+    # Merge with machine readability 
     spdf_fortified %>% 
         left_join(combined_df, by = c("id" = "State")) %>% 
-        mutate(level = replace_na(level, "unavailable"))
+        mutate(level = ifelse(Machine.Readable == "No", "unavailable", level), 
+               level = replace_na(level, "unavailable"))
 }
 
 # Plot map  
