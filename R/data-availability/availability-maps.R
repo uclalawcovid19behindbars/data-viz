@@ -3,7 +3,11 @@ library(behindbarstools)
 
 # Load data 
 scrape_df <- behindbarstools::read_scrape_data()
-machine_readable <- read.csv("machine-readability-by-jurisdiction.csv")
+machine_readable <- read.csv("data/interim/machine-readability-by-jurisdiction.csv")
+
+# ------------------------------------------------------------------------------
+# Facilities by jurisdiction 
+# ------------------------------------------------------------------------------
 
 # Plot facilities by jurisdiction (lollipop)
 jur_lolli <- scrape_df %>% 
@@ -29,7 +33,7 @@ jur_lolli <- scrape_df %>%
     behindbarstools::theme_behindbars(base_size = 14) + 
     theme(axis.title.y = element_blank()) 
 
-ggsave("facilities-by-jurisdiction.svg", jur_lolli, width = 8, height = 3)
+ggsave("img/facilities-by-jurisdiction.svg", jur_lolli, width = 8, height = 3)
 
 # Plot facilities by jurisdiction (donut)
 plot_df <- scrape_df %>% 
@@ -55,11 +59,14 @@ jur_donut <- ggplot(plot_df,
         values = c("#D7790F", "#82CAA4", "#4C6788", "#AE91A8")) + 
     theme(legend.position = "right") 
 
-ggsave("facilities-by-jurisdiction_donut.svg", jur_donut, width = 8, height = 3)
+ggsave("img/facilities-by-jurisdiction_donut.svg", jur_donut, width = 8, height = 3)
 
-# Coverage maps 
-# Source: https://www.r-graph-gallery.com/328-hexbin-map-of-the-usa.html
-spdf <- geojsonio::geojson_read("us_states_hexgrid.geojson", what = "sp")
+# ------------------------------------------------------------------------------
+# Data availability maps 
+# ------------------------------------------------------------------------------
+
+# Hex map skeleton 
+spdf <- geojsonio::geojson_read("data/raw/us_states_hexgrid.geojson", what = "sp")
 
 spdf@data = spdf@data %>% 
     mutate(google_name = gsub(" \\(United States\\)", "", google_name))
@@ -69,31 +76,6 @@ spdf_fortified <- broom::tidy(spdf, region = "google_name")
 centers <- cbind.data.frame(data.frame(
     rgeos::gCentroid(spdf, byid = TRUE), 
     id = spdf@data$iso3166_2))
-
-# Set plotting aesthetics 
-fill_bb <- c("facility" = "#D7790F", 
-             "statewide" = "#82CAA4", 
-             "unavailable" = "#E7F1E2")
-
-theme_map_behindbars <- function(
-    base_size = 24, base_family = "Helvetica") {
-    
-    behindbarstools::theme_behindbars(
-        base_size = base_size,
-        base_family = base_family
-    ) +
-        ggplot2::theme(
-            axis.line =           element_blank(),
-            axis.ticks =          element_blank(),
-            axis.text =           element_blank(),
-            axis.title =          element_blank(),
-            axis.title.y =        element_blank(),
-            panel.grid.major =    element_blank(),
-            panel.grid.minor =    element_blank(),
-            panel.grid.major.y =  element_blank(),
-            legend.position =     "top",
-            legend.title =        element_blank())
-}
 
 # Get plotting data (with hex grid) 
 get_plotting_data <- function(metric) {
@@ -127,7 +109,6 @@ get_plotting_data <- function(metric) {
         left_join(machine_readable %>% 
                       filter(Jurisdiction == "state"), by = c("State"))
     
-    # Merge with machine readability 
     spdf_fortified %>% 
         left_join(combined_df, by = c("id" = "State")) %>% 
         mutate(level = ifelse(Machine.Readable == "No", "unavailable", level), 
@@ -152,6 +133,10 @@ plot_hex_map <- function(df) {
         theme_map_behindbars(base_size = 14) 
 }
 
+# Plot aesthetics 
+fill_bb <- c("facility" = "#D7790F", 
+             "statewide" = "#82CAA4", 
+             "unavailable" = "#E7F1E2")
 
 # Residents coverage maps 
 map_Residents.Confirmed <- 
@@ -174,7 +159,7 @@ res_map <- ggpubr::ggarrange(map_Residents.Confirmed, map_Residents.Deaths,
                   map_Residents.Active, map_Residents.Tadmin, 
                   common.legend = TRUE) 
 
-ggsave("residents-maps.svg", res_map, width = 8, height = 8)
+ggsave("img/residents-maps.svg", res_map, width = 8, height = 8)
 
 # Staff coverage maps 
 map_Staff.Confirmed <- 
@@ -190,3 +175,38 @@ staff_map <- ggpubr::ggarrange(map_Staff.Confirmed, map_Staff.Deaths,
 
 ggsave("staff-maps.svg", staff_map, width = 8, height = 4)
 
+# ------------------------------------------------------------------------------
+# Vaccine data maps 
+# ------------------------------------------------------------------------------
+
+fill_vax <- c("Reporting" = "#71A9C9", 
+              "Unavailable" = "#E7F1E2")
+
+vax_availability <- scrape_df %>% 
+    mutate(level = ifelse(
+        is.na(Residents.Initiated) & is.na(Residents.Vadmin) & is.na(Staff.Initiated) & is.na(Staff.Vadmin), 
+        0, 1)) %>% 
+    group_by(State) %>% 
+    summarise(level = sum(level)) %>% 
+    mutate(level = case_when(level == 0 ~ "Unavailable", 
+                             level > 0 ~ "Reporting"))
+
+plot_df <- spdf_fortified %>% 
+    left_join(vax_availability, by = c("id" = "State")) 
+
+vax_map <- ggplot() +
+    geom_polygon(
+        data = plot_df, 
+        aes(x = long, y = lat, group = group, fill = level), 
+        color = "white") + 
+    geom_text(
+        data = centers, 
+        aes(x = x, y = y, label = id), size = 3) + 
+    scale_fill_manual(
+        values = fill_vax) + 
+    coord_map() + 
+    theme_map_behindbars(base_size = 14) + 
+    labs(title = "Which state DOCs are currently reporting vaccine data?") + 
+    theme(plot.title = element_text(hjust = 0.5))
+
+ggsave("img/vax-map.svg", vax_map, width = 8, height = 4)
