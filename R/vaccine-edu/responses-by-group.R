@@ -13,15 +13,12 @@ xwalk_cdc <- read.csv("data/interim/crosswalk.csv")
 
 # Join datasets and reshape reasons long 
 joined <- data %>% 
-    select(`Index global`, `Accept?`, `j/p`, `age`, `primary race`, `gender`, 
-           `1st Reason Code`, `2nd Reason Code`, `3rd Reason Code`) %>% 
-    as.data.frame() %>% 
-    reshape::melt(id = c("Index global", "Accept?", "j/p", "age", "primary race", "gender")) %>% 
-    left_join(xwalk_cdc, by = c("value" = "Code")) %>% 
+    left_join(xwalk_cdc, by = c("1st Reason Code" = "Code")) %>% 
     filter(`Accept?` %in% c("n", "m")) %>% 
     filter(!is.na(Category)) %>% 
+    filter(!Category == "No response or null response") %>% 
     mutate(age = as.numeric(age)) %>% 
-    mutate("under35" = ifelse(age < 35, 1, 0))
+    mutate("under35" = ifelse(age < 35, 1, 0)) 
 
 # Get total number of unique individuals 
 overall_n <- joined %>% select("Index global") %>% 
