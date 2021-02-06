@@ -8,29 +8,26 @@ library(xlsx)
 data <- read_excel("data/raw/Vaccination Questionnaire Data 1.6 - Sharon.xlsx", 
                    sheet = "Data", guess_max = 5000)
 
-xwalk <- read.csv("data/interim/xwalk.csv")
+# Read CDC crosswalk 
+xwalk_cdc <- read.csv("data/interim/xwalk_cdc.csv")
 
+# Join datasets and reshape reasons long 
 joined <- data %>% 
-    mutate("Group" = case_when(`Accept?` == "m" ~ "maybe",
-                               `Accept?` == "n" ~ "no",
-                               `Accept?` == "y" ~ "yes", 
-                               TRUE ~ `Accept?`)) %>% 
-    left_join(xwalk, by = c("Group" = "group", 
-                            "1st Reason Code" = "code")) %>% 
-    filter(!is.na(subcategory)) %>% 
-    filter(subcategory != "") %>% 
-    rename("Code" = `1st Reason Code`, 
-           "Category" = `category`, 
-           "Subcategory" = `subcategory`) %>% 
-    mutate(age = as.numeric(age))
-    
+    select(`Index global`, `Accept?`, `j/p`, `age`, `primary race`, `gender`, 
+           `1st Reason Code`, `2nd Reason Code`, `3rd Reason Code`) %>% 
+    as.data.frame() %>% 
+    reshape::melt(id = c("Index global", "Accept?", "j/p", "age", "primary race", "gender")) %>% 
+    filter(!is.na(value)) %>% 
+    left_join(xwalk_cdc, by = c("value" = "Code")) %>% 
+    mutate(age = as.numeric(age)) 
+
 # Function to generate most common reasons 
-process_crosstab <- function(x, n = 20) {
+process_crosstab <- function(x) {
     x %>% 
-        group_by(Group, Code, Category, Subcategory) %>% 
+        group_by(Category) %>% 
         summarise(Responses = n()) %>% 
+        mutate(Percent = scales::percent(Responses / sum(Responses), accuracy = 0.1L)) %>% 
         arrange(-Responses) %>% 
-        head(n) %>% 
         ungroup() %>% 
         as.data.frame()
 }
@@ -39,72 +36,108 @@ process_crosstab <- function(x, n = 20) {
 
 # Overall 
 overall <- joined %>% 
-    process_crosstab()
-
-write.xlsx(overall, "data/out/crosstabs.xlsx", sheetName = "overall", row.names = FALSE)
+    process_crosstab() %>% 
+    rename("Responses_overall" = "Responses", 
+           "Percent_overall" = "Percent")
 
 # By response 
 no <- joined %>% 
-    filter(Group == "no") %>% 
-    process_crosstab()
+    filter(`Accept?` == "n") %>% 
+    process_crosstab() %>% 
+    rename("Responses_no" = "Responses", 
+           "Percent_no" = "Percent")
 
 maybe <- joined %>% 
-    filter(Group == "maybe") %>% 
-    process_crosstab()
+    filter(`Accept?` == "m") %>% 
+    process_crosstab() %>% 
+    rename("Responses_maybe" = "Responses", 
+           "Percent_maybe" = "Percent")
 
-write.xlsx(no, "data/out/crosstabs.xlsx", sheetName = "no", row.names = FALSE, append = TRUE)
-write.xlsx(maybe, "data/out/crosstabs.xlsx", sheetName = "maybe", row.names = FALSE, append = TRUE)
+response <- overall %>% 
+    left_join(no, by = "Category") %>% 
+    left_join(maybe, by = "Category")
+
+write.xlsx(response, "data/out/crosstabs.xlsx", sheetName = "response", row.names = FALSE)
 
 # By facility type
 jail <- joined %>% 
     filter(`j/p` == "jail") %>% 
-    process_crosstab()
+    process_crosstab() %>% 
+    rename("Responses_jail" = "Responses", 
+           "Percent_jail" = "Percent")
 
 prison <- joined %>% 
     filter(`j/p` == "prison") %>% 
-    process_crosstab()
+    process_crosstab() %>%
+    rename("Responses_prison" = "Responses", 
+           "Percent_prison" = "Percent")
 
-write.xlsx(jail, "data/out/crosstabs.xlsx", sheetName = "jail", row.names = FALSE, append = TRUE)
-write.xlsx(prison, "data/out/crosstabs.xlsx", sheetName = "prison", row.names = FALSE, append = TRUE)
+facility <- overall %>% 
+    left_join(jail, by = "Category") %>% 
+    left_join(prison, by = "Category")
+
+write.xlsx(facility, "data/out/crosstabs.xlsx", sheetName = "facility", row.names = FALSE, append = TRUE)
 
 # By gender
 male <- joined %>% 
     filter(gender == "m") %>% 
-    process_crosstab()
+    process_crosstab() %>%
+    rename("Responses_male" = "Responses", 
+           "Percent_male" = "Percent")
 
 female <- joined %>% 
     filter(gender == "f") %>% 
-    process_crosstab()
+    process_crosstab() %>%
+    rename("Responses_female" = "Responses", 
+           "Percent_female" = "Percent")
 
-write.xlsx(male, "data/out/crosstabs.xlsx", sheetName = "male", row.names = FALSE, append = TRUE)
-write.xlsx(female, "data/out/crosstabs.xlsx", sheetName = "female", row.names = FALSE, append = TRUE)
+gender <- overall %>% 
+    left_join(male, by = "Category") %>% 
+    left_join(female, by = "Category")
+
+write.xlsx(gender, "data/out/crosstabs.xlsx", sheetName = "gender", row.names = FALSE, append = TRUE)
 
 # By race
 white <- joined %>% 
     filter(`primary race` == "w") %>% 
-    process_crosstab()
+    process_crosstab() %>%
+    rename("Responses_white" = "Responses", 
+           "Percent_white" = "Percent")
 
 black <- joined %>% 
     filter(`primary race` == "b") %>% 
-    process_crosstab()
+    process_crosstab() %>%
+    rename("Responses_black" = "Responses", 
+           "Percent_black" = "Percent")
 
 hispanic <- joined %>% 
     filter(`primary race` == "h") %>% 
-    process_crosstab()
+    process_crosstab() %>%
+    rename("Responses_hispanic" = "Responses", 
+           "Percent_hispanic" = "Percent")
 
-write.xlsx(white, "data/out/crosstabs.xlsx", sheetName = "white", row.names = FALSE, append = TRUE)
-write.xlsx(black, "data/out/crosstabs.xlsx", sheetName = "black", row.names = FALSE, append = TRUE)
-write.xlsx(hispanic, "data/out/crosstabs.xlsx", sheetName = "hispanic", row.names = FALSE, append = TRUE)
+race <- overall %>% 
+    left_join(white, by = "Category") %>% 
+    left_join(black, by = "Category") %>% 
+    left_join(hispanic, by = "Category")
+
+write.xlsx(race, "data/out/crosstabs.xlsx", sheetName = "race", row.names = FALSE, append = TRUE)
 
 # By age 
 young <- joined %>% 
     filter(age < 35) %>% 
-    process_crosstab()
+    process_crosstab() %>%
+    rename("Responses_under35" = "Responses", 
+           "Percent_under35" = "Percent")
 
 old <- joined %>% 
     filter(age >= 35) %>% 
-    process_crosstab()
+    process_crosstab() %>%
+    rename("Responses_over35" = "Responses", 
+           "Percent_over35" = "Percent")
 
-write.xlsx(young, "data/out/crosstabs.xlsx", sheetName = "below_35", row.names = FALSE, append = TRUE)
-write.xlsx(old, "data/out/crosstabs.xlsx", sheetName = "above_35", row.names = FALSE, append = TRUE)
+age <- overall %>% 
+    left_join(young, by = "Category") %>% 
+    left_join(old, by = "Category") 
 
+write.xlsx(age, "data/out/crosstabs.xlsx", sheetName = "age", row.names = FALSE, append = TRUE)
