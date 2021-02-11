@@ -1,8 +1,10 @@
 library(tidyverse)
 library(behindbarstools)
+library(googlesheets4)
 
 # Load data 
-scorecard <- read.csv("data/interim/scorecard-data.csv", skip = 1)
+vaccine_data <- googlesheets4::read_sheet("1tc3p3FHG0tCHnlfb8YAABno_oh9JSNL4MNfhn_clyX0") %>% 
+    janitor::clean_names()
 
 # ------------------------------------------------------------------------------
 # Data reporting maps 
@@ -22,10 +24,17 @@ centers <- cbind.data.frame(data.frame(
 
 # Join with DOC scorecard data 
 joined <- spdf_fortified %>% 
-    left_join(scorecard, by = c("id" = "State")) %>% 
+    left_join(vaccine_data, by = c("id" = "state")) %>% 
     mutate_if(is.character, list(~na_if(.,""))) %>% 
-    mutate_at(vars(starts_with(c("Residents.", "Staff"))), ~replace(., is.na(.), "Unavailable")) 
-
+    mutate_at(vars(starts_with(c("Vaccinating", "Reporting"))), ~replace(., is.na(.), "No")) %>% 
+    mutate(map1 = case_when(vaccinating_residents == "Yes" & reporting_residents_data == "Yes" ~ "1", 
+                            vaccinating_residents == "Yes" & reporting_residents_data == "No" ~ "2", 
+                            vaccinating_residents == "No" ~ "3"), 
+           map2 = case_when(vaccinating_residents == "Yes" & vaccinating_staff == "Yes" ~ "1", 
+                            vaccinating_residents == "No" & vaccinating_staff == "Yes" ~ "2", 
+                            vaccinating_residents == "Yes" & vaccinating_staff == "No" ~ "3", 
+                            TRUE ~ "4"))
+          
 # Plot map  
 plot_hex_map <- function(df, metric) {
     ggplot() +
@@ -35,34 +44,40 @@ plot_hex_map <- function(df, metric) {
             color = "white") + 
         geom_text(
             data = centers, 
-            aes(x = x, y = y, label = id), size = 4) + 
-        scale_fill_manual(
-            values = fill_bb,
-            breaks = c("Facility-Level", "Statewide", "Unavailable"), 
-            labels = c("Facility-Level", "Aggregate Totals", "Unavailable")) + 
+            aes(x = x, y = y, label = id), size = 3) + 
         coord_map() + 
-        theme_map_behindbars(base_size = 14) +
-        labs(title = metric)
+        theme_map_behindbars(base_size = 14) 
 }
 
 # Plot aesthetics 
-fill_bb <- c("Facility-Level" = "#DDE2C6", 
-             "Statewide" = "#77AAC7", 
-             "Unavailable" = "#E7963C")
+fill_bb <- c("1" = "#DDE2C6", 
+             "2" = "#77AAC7", 
+             "3" = "#E7963C", 
+             "4" = "#e3e3e3")
 
-map_res_cases <- plot_hex_map(joined, "Residents.Cumulative.Cases")
-map_res_deaths <- plot_hex_map(joined, "Residents.Cumulative.Deaths") 
-maps_res_active <- plot_hex_map(joined, "Residents.Active.Cases") 
-maps_res_tests <- plot_hex_map(joined, "Residents.Tests") 
-maps_staff_cases <- plot_hex_map(joined, "Staff.Cumulative.Cases") 
-maps_staff_deaths <- plot_hex_map(joined, "Staff.Cumulative.Deaths")
+map1 <- plot_hex_map(joined, "map1") + 
+    scale_fill_manual(
+        values = fill_bb, 
+        breaks = c("1", "2", "3"), 
+        labels = c("Vaccinating incarcerated people and reporting data", 
+                   "Reportedly vaccinating incarcerated people but not reporting data", 
+                   "Not yet vaccinating incarcerated people"), 
+        guide = guide_legend(ncol = 1))
 
-reporting_map <- ggpubr::ggarrange(
-    map_res_cases, map_res_deaths, maps_res_active, maps_res_tests, 
-    maps_staff_cases, maps_staff_deaths, common.legend = TRUE, 
-    nrow = 3, ncol = 2) 
+map2 <- plot_hex_map(joined, "map2") + 
+    scale_fill_manual(
+        values = fill_bb, 
+        breaks = c("1", "2", "3", "4"), 
+        labels = c("Vaccinating staff and incarcerated people", 
+                   "Vaccinating staff only", 
+                   "Vaccinating residents only", 
+                   "Not yet vaccinating staff or residents"), 
+        guide = guide_legend(ncol = 1))
 
-ggsave("data/out/data-reporting-maps.svg", reporting_map, width = 12, height = 12)
+reporting_map <- ggpubr::ggarrange(map1, map2, common.legend = TRUE) 
+
+ggsave("data/out/map1.png", map1, width = 6, height = 4)
+ggsave("data/out/map2.png", map2, width = 6, height = 4)
 
 # ------------------------------------------------------------------------------
 # Vaccine data maps 
