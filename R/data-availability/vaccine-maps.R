@@ -32,8 +32,7 @@ joined <- spdf_fortified %>%
                             vaccinating_residents == "No" ~ "3"), 
            map2 = case_when(vaccinating_residents == "Yes" & vaccinating_staff == "Yes" ~ "1", 
                             vaccinating_residents == "No" & vaccinating_staff == "Yes" ~ "2", 
-                            vaccinating_residents == "Yes" & vaccinating_staff == "No" ~ "3", 
-                            TRUE ~ "4"))
+                            vaccinating_residents == "No" & vaccinating_staff == "No" ~ "3"))
           
 # Plot map  
 plot_hex_map <- function(df, metric) {
@@ -41,43 +40,46 @@ plot_hex_map <- function(df, metric) {
         geom_polygon(
             data = df, 
             aes(x = long, y = lat, group = group, fill = !!sym(metric)), 
-            color = "white") + 
+            color = "white", 
+            size = 0.8) + 
         geom_text(
             data = centers, 
-            aes(x = x, y = y, label = id), size = 3) + 
+            aes(x = x, y = y, label = id), size = 3.5) + 
         coord_map() + 
         theme_map_behindbars(base_size = 14) 
 }
 
 # Plot aesthetics 
-fill_bb <- c("1" = "#DDE2C6", 
-             "2" = "#77AAC7", 
-             "3" = "#E7963C", 
-             "4" = "#e3e3e3")
+fill_map1 <- c("1" = "#77AAC7",
+               "2" = "#E7963C", 
+               "3" = "#E1DAE0")
 
 map1 <- plot_hex_map(joined, "map1") + 
     scale_fill_manual(
-        values = fill_bb, 
+        values = fill_map1, 
         breaks = c("1", "2", "3"), 
         labels = c("Vaccinating incarcerated people and reporting data", 
                    "Reportedly vaccinating incarcerated people but not reporting data", 
                    "Not yet vaccinating incarcerated people"), 
         guide = guide_legend(ncol = 1))
 
+fill_map2 <- c("1" = "#A89191",
+               "2" = "#9DC183", 
+               "3" = "#C4DBE5")
+
 map2 <- plot_hex_map(joined, "map2") + 
     scale_fill_manual(
-        values = fill_bb, 
-        breaks = c("1", "2", "3", "4"), 
+        values = fill_map2, 
+        breaks = c("1", "2", "3"), 
         labels = c("Vaccinating staff and incarcerated people", 
                    "Vaccinating staff only", 
-                   "Vaccinating residents only", 
                    "Not yet vaccinating staff or residents"), 
         guide = guide_legend(ncol = 1))
 
-reporting_map <- ggpubr::ggarrange(map1, map2, common.legend = TRUE) 
+out <- ggpubr::ggarrange(map1, map2)
 
-ggsave("data/out/map1.png", map1, width = 6, height = 4)
-ggsave("data/out/map2.png", map2, width = 6, height = 4)
+ggsave("data/out/vaccine-blog-maps.png", out, width = 12, height = 6)
+ggsave("data/out/vaccine-blog-maps.svg", out, width = 12, height = 6)
 
 # ------------------------------------------------------------------------------
 # Vaccine data maps 
