@@ -23,17 +23,20 @@ mydata <- scrape_df %>%
 mydata %>%
   group_by(Date) %>% #<<
   e_charts(StateShort, timeline = TRUE) %>% #<<
-  e_bar(percInit, realtimeSort = TRUE, itemStyle = list(
-    borderColor = "black", borderWidth = '1')
+  e_bar(percInit, 
+        realtimeSort = TRUE, 
+        itemStyle = list(
+            borderColor = "black", 
+            borderWidth = '1')
   ) %>%
   e_legend(show = FALSE) %>%
   e_flip_coords() %>%
   e_y_axis(inverse = TRUE)  %>%
   e_labels(position = "insideRight", 
            formatter = htmlwidgets::JS("
-      function(params){
-        return(params.value[0] + '%')
-      }
+          function(params){
+            return(params.value[0] + '%')
+          }
       "),
       ) %>%
   e_timeline_opts(
