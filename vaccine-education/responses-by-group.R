@@ -14,11 +14,13 @@ xwalk_cdc <- read.csv("data/interim/crosswalk.csv")
 # Join datasets and reshape reasons long 
 joined <- data %>% 
     left_join(xwalk_cdc, by = c("1st Reason Code" = "Code")) %>% 
-    filter(`Accept?` %in% c("n", "m")) %>% 
+    filter(`Accept?` %in% c("m")) %>% 
     filter(!is.na(Category)) %>% 
     filter(!Category == "No response or null response") %>% 
     mutate(age = as.numeric(age)) %>% 
-    mutate("under35" = ifelse(age < 35, 1, 0)) 
+    mutate("under35" = ifelse(age < 35, 1, 0)) %>% 
+    mutate("race_aggregated" = case_when(`primary race` %in% c("w", "b", "h", "n") ~ `primary race`,
+                                         TRUE ~ "other"))
 
 # Get total number of unique individuals 
 overall_n <- joined %>% select("Index global") %>% 
@@ -102,6 +104,16 @@ hispanic <- joined %>%
     process_crosstab() %>%
     rename("Hispanic" = "output") 
 
+native_am <- joined %>% 
+    filter(`primary race` == "n") %>% 
+    process_crosstab() %>% 
+    rename("Native American" = "output")
+
+other <- joined %>% 
+    filter(!`primary race` %in% c("w", "b", "h", "n")) %>% 
+    process_crosstab() %>% 
+    rename("Other Race" = "output")
+
 # By age 
 young <- joined %>% 
     filter(under35 == 1) %>% 
@@ -124,10 +136,12 @@ out <- overall %>%
     left_join(white) %>% 
     left_join(black) %>% 
     left_join(hispanic) %>% 
+    left_join(native_am) %>% 
+    left_join(other) %>% 
     left_join(young) %>% 
     left_join(old) 
 
-write.xlsx(out, "data/out/crosstabs.xlsx", sheetName = "table-3", row.names = FALSE)
+write.xlsx(out, "data/out/crosstabs.xlsx", sheetName = "yes", row.names = FALSE)
 
 # ------------------------------------------------------------------------------
 
@@ -135,5 +149,5 @@ write.xlsx(out, "data/out/crosstabs.xlsx", sheetName = "table-3", row.names = FA
 chisq.test(table(joined$`Accept?`, joined$Category))
 chisq.test(table(joined$`j/p`, joined$Category))
 chisq.test(table(joined$gender, joined$Category))
-chisq.test(table(joined$`primary race`, joined$Category))
+chisq.test(table(joined$race_aggregated, joined$Category))
 chisq.test(table(joined$under35, joined$Category))

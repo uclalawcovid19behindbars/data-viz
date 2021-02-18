@@ -47,8 +47,8 @@ plot_hex_map <- function(df, metric) {
 
 # Plot aesthetics 
 fill_bb <- c("Facility-Level" = "#DDE2C6", 
-             "Statewide" = "#77AAC7", 
-             "Unavailable" = "#E7963C")
+             "Statewide" = "#E8B828", 
+             "Unavailable" = "#BC544B")
 
 map_res_cases <- plot_hex_map(joined, "Residents.Cumulative.Cases")
 map_res_deaths <- plot_hex_map(joined, "Residents.Cumulative.Deaths") 

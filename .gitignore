@@ -4,6 +4,10 @@ data/outputs/*
 outfiles/*
 Plots/*
 
+# Data files
+*.csv
+*.xlsx
+
 # Image files 
 *.png
 *.svg
