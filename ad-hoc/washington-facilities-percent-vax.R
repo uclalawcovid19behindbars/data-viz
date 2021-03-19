@@ -3,6 +3,8 @@ library(ggplot2)
 library(tidyverse)
 
 # number of facilities reporting vax data in each state
+latest_scraped = read_scrape_data()
+
 latest_scraped %>%
   filter(!is.na(Residents.Initiated)) %>%
   filter(Name != "STATEWIDE") %>%
@@ -27,8 +29,9 @@ ggplot(wa_vax, aes(x = Name, y = percent_vax)) +
   geom_bar(aes(fill = percent_vax), stat = "identity") +
   scale_y_continuous(labels = scales::comma, limits = c(0, 100)) + 
   labs(title = "Percent of Incarcerated People in Washington State Prisons Who Have Received Vaccine", 
+       x = "",
        y = "Percentage Vaccinated", 
-       caption = "*Not All Facilities Reporting | As of March 17, 2021 | Max Percentage = 56.03%") +
+       caption = "*Not All Facilities Reporting | As of March 19, 2021 | Max Percentage = 56.03%") +
   ggplot2::theme(axis.text.x = ggplot2::element_text(angle = 90, hjust = 1), 
                  plot.tag.position = c(0.80, 0.05)) +
   theme_behindbars() + 
