@@ -14,9 +14,9 @@ first_row_dates <- read_xlsx(file.path("~", "UCLA", "misc-data", "NYC-BOC",
 )
 
 dat <- read_xlsx(file.path("~", "UCLA", "misc-data", "NYC-BOC", 
-                "Daily-Report-Population-Data-Consolidated-Summaries-February-2021.xlsx"),
-                col_names = FALSE
-                )
+                           "Daily-Report-Population-Data-Consolidated-Summaries-February-2021.xlsx"),
+                 col_names = FALSE
+)
 
 first_row_dates <- as.numeric(dat[1, -1])
 first_row_dates_formatted <- as.Date(first_row_dates, origin = '1899-12-30')
@@ -44,33 +44,16 @@ population <- dat %>%
   mutate(pop_sum_gender = vector_sum_na_rm(Female, Male, `Transgender Female`, `Transgender Male`, `Gender Non-Conforming`, Intersex, `Unknown Gender`),
          pop_mutually_exclusive = ifelse(pop_sum_gender == total_population, TRUE, FALSE),
          cisgender_aggregated = vector_sum_na_rm(Female, Male),
+         not_cis_male_aggregated = vector_sum_na_rm(Female, `Transgender Female`, `Transgender Male`, `Gender Non-Conforming`, Intersex, `Unknown Gender`),
          gnc_aggregated = vector_sum_na_rm(`Transgender Female`, `Transgender Male`, `Gender Non-Conforming`, Intersex, `Unknown Gender`)) 
 
 pop_to_compare <- population %>%
-  select(Date, total_population, Female, Male, cisgender_aggregated, gnc_aggregated) %>%
+  select(Date, total_population, Female, Male, cisgender_aggregated, not_cis_male_aggregated, gnc_aggregated) %>%
   pivot_longer(
     cols = Female:gnc_aggregated,
     names_to = "gender",
     values_to = "population"
   )
-
-exposed <- dat %>%
-  slice(36:46) %>%
-  tibble::rownames_to_column() %>%  
-  pivot_longer(-rowname) %>% 
-  pivot_wider(names_from=rowname, values_from=value) %>%
-  row_to_names(row_number = 1) %>%
-  select(-`...1`) %>%
-  mutate(Date = first_row_dates_formatted) %>%
-  select(Date, 
-         Female:Intersex) %>%
-  pivot_longer(
-    cols = Female:Intersex,
-    names_to = "gender",
-    values_to = "exposed_asymp"
-  ) %>%
-  mutate(exposed_asymp_numeric = ifelse(exposed_asymp == "≤10", 1, exposed_asymp),
-         exposed_asymp_numeric = as.numeric(exposed_asymp_numeric))
 
 exposed <- dat %>%
   slice(36:46) %>%
@@ -95,10 +78,11 @@ exposed <- dat %>%
   mutate(exposed_sum_gender = vector_sum_na_rm(Female, Men, `Transgender Female`, `Transgender Male`, `Gender Non-Conforming`, Intersex, `Unknown Gender`),
          exposed_mutually_exclusive = ifelse(exposed_sum_gender == total_exposed, TRUE, FALSE),
          cisgender_aggregated = vector_sum_na_rm(Female, Men),
+         not_cis_male_aggregated = vector_sum_na_rm(Female, `Transgender Female`, `Transgender Male`, `Gender Non-Conforming`, Intersex, `Unknown Gender`),
          gnc_aggregated = vector_sum_na_rm(`Transgender Female`, `Transgender Male`, `Gender Non-Conforming`, Intersex, `Unknown Gender`)) 
 
 exposed_to_compare <- exposed %>%
-  select(Date, total_exposed, Female, Men, cisgender_aggregated, gnc_aggregated) %>%
+  select(Date, total_exposed, Female, Men, cisgender_aggregated, not_cis_male_aggregated, gnc_aggregated) %>%
   pivot_longer(
     cols = Female:gnc_aggregated,
     names_to = "gender",
@@ -131,18 +115,20 @@ confirmed <- dat %>%
          total_confirmed = as.numeric(total_confirmed),
          gnc_aggregated = ifelse(both_cis_real, 
                                  total_confirmed - cisgender_aggregated,
-                                 NA)
+                                 NA),
+         not_cis_male_aggregated = ifelse(!is.na(Male),
+                                          total_confirmed - Male,
+                                          NA)
   )
 
 confirmed_to_compare <- confirmed %>%
-  select(Date, total_confirmed, Female, Male, cisgender_aggregated, gnc_aggregated) %>%
+  select(Date, total_confirmed, Female, Male, cisgender_aggregated, not_cis_male_aggregated, gnc_aggregated) %>%
   pivot_longer(
     cols = Female:gnc_aggregated,
     names_to = "gender",
     values_to = "confirmed"
   )
 
-## stopped here -- something seems to be amiss 
 exposed_confirmed <- left_join(confirmed_to_compare, exposed_to_compare, by = c("gender", "Date"))
 merged <- left_join(pop_to_compare, exposed_confirmed, by = c("gender", "Date"))
 skim(merged)
@@ -157,7 +143,14 @@ out <- merged %>%
 plt <- out %>%
   ggplot( aes(x = Date, y = conf_rate, group = gender, color = gender)) +
   geom_line()
-ggsave("nyc-boc-covid.png", plt, width = 12, height = 10)
+ggsave("nyc-boc-covid_aggregated.png", plt, width = 12, height = 10)
 
+## another plt
+## cis male and not-cis male
+plt2 <- out %>%
+  filter((gender == "Male") | (gender == "not_cis_male_aggregated")) %>%
+  ggplot( aes(x = Date, y = conf_rate, group = gender, color = gender)) +
+  geom_line()
+ggsave("nyc-boc-covid_aggregated_collapsed.png", plt2, width = 12, height = 10)
 
 
