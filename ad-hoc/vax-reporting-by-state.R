@@ -48,3 +48,17 @@ plt_percent_reporting = ggplot(results, aes(x = State, y = percentage)) +
   theme_behindbars() + 
   theme(text = element_text(size=12)) +
   scale_fill_gradient(low = "#82CAA4", high = "#D7790F", na.value = NA, name = "")
+
+# plot percent reporting with binned percentages into categories
+plt_percent_reporting_binned = ggplot(results, aes(percentage, fill = State)) +
+  geom_histogram(bins=7) + 
+  labs(title = "Only 7 States Are Currently Releasing Any Facility Level Vaccination Data",
+       subtitle = "Percentage of Facilities Reporting By State",
+       x = "Percentage",
+       y = "Count",
+       caption = "*Data as of March 24, 2021") + 
+  scale_y_continuous(breaks=c(0,1,2)) +
+  xlim(0,110) +
+  theme_behindbars() + 
+  theme(text = element_text(size=12))
+  
