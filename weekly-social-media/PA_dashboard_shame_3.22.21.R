@@ -14,13 +14,7 @@ p <- pa %>%
     geom_area(alpha = 0.5, fill = "#D7790F") + 
     annotate("rect", 
              xmin = as.Date("2021-01-29"), xmax = Sys.Date(), ymin = 0, ymax = 10000,
-             alpha = 0.8, fill = "black") + 
-    annotate("text", 
-             x = as.Date("2020-11-10"), 
-             y = 9400, 
-             label = "On January 29, the PA DOC\nremoved its public data dashboard", 
-             size = 6, 
-             color = "#555526") + 
+             alpha = 0.1, fill = "black", size = 1.0, color = "black", linetype = "dashed") + 
     labs(y = "Reported Cumulative Cases Among Incarcerated People") + 
     theme_behindbars() + 
     scale_y_continuous(label = scales::comma) + 
