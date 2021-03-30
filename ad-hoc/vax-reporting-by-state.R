@@ -13,7 +13,12 @@ total_state_facilities = latest_scraped %>%
 
 # number of state facilities reporting vax data in each state
 num_facilities_reporting = latest_scraped %>%
-  filter(!is.na(Residents.Initiated), 
+  filter(
+    (
+      !is.na(Residents.Initiated) |
+      !is.na(Residents.Vadmin) | 
+      !is.na(Residents.Completed)
+          ), 
          Jurisdiction == "state",
          Name != "STATEWIDE") %>%
   count(State)
@@ -39,15 +44,18 @@ plt_num_reporting = ggplot(results, aes(x = State, y = n_reporting)) +
 
 # plot percent reporting
 plt_percent_reporting = ggplot(results, aes(x = State, y = percentage)) + 
-  geom_bar(aes(fill = percentage), stat = "identity") + 
+  geom_bar(
+    fill = "#D7790F",
+    stat = "identity") + 
   labs(title = "Only 7 States Are Currently Releasing Any Facility Level Vaccination Data",
        subtitle = "Percentage Facilities Reporting By State",
        x = "",
        y = "",
-       caption = "*Data as of March 24, 2021") + 
+       caption = "*Data as of March 29, 2021") + 
   theme_behindbars() + 
-  theme(text = element_text(size=12)) +
-  scale_fill_gradient(low = "#82CAA4", high = "#D7790F", na.value = NA, name = "")
+  theme(text = element_text(size=12)) 
+ggsave( "facility_level_vaccine_data.png", plt_percent_reporting, width = 14, height = 10)
+
 
 # plot percent reporting with binned percentages into categories
 plt_percent_reporting_binned = ggplot(results, aes(percentage, fill = State)) +
