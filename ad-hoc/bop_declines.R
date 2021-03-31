@@ -5,23 +5,42 @@ all_scrape <- read_scrape_data(all_dates = TRUE)
 
 federal <- all_scrape %>% 
     filter(Jurisdiction == "federal")
-    
-# Sum of max of each facility 
-federal %>%     
+
+# Sum by date 
+base <- federal %>% 
+    group_by(Date) %>%
+    summarise(total_cases = sum_na_rm(Residents.Confirmed)) %>% 
+    filter(Date > as.Date("2021-01-01"))
+
+# Sum facility's max to-date by date 
+max <- federal %>%
+    arrange(Name, Date) %>% 
     group_by(Name) %>% 
-    summarise(max = max(Residents.Confirmed)) %>% 
-    summarise(sum_na_rm(max))
+    mutate(max = cummax(Residents.Confirmed)) %>% 
+    ungroup() %>% 
+    group_by(Date) %>% 
+    summarise(max_sum = sum_na_rm(max)) %>% 
+    filter(Date > as.Date("2021-01-01"))
+
+# Comparison of methods 
+p0 <- ggplot() + 
+    geom_line(max, mapping = aes(x = Date, y = max_sum), size = 2.0, color = "#4C6788") + 
+    geom_line(base, mapping = aes(x = Date, y = total_cases), size = 2.0, color = "#D7790F") + 
+    theme_behindbars() + 
+    scale_y_continuous(label = scales::comma, limits = c(38000, 52000)) + 
+    labs(title = "Estimated number of inmates that have ever had a positive test", 
+         y = "Estimated positive tests")
+
+ggsave("p0.png", p0, width = 14, height = 10)
 
 # Total positive tests over time 
-p1 <- federal %>% 
-    group_by(Date) %>%
-    filter(Date > as.Date("2021-02-01")) %>% 
-    summarise(total_cases = sum_na_rm(Residents.Confirmed)) %>%
+p1 <- base %>%
     ggplot(aes(x = Date, y = total_cases)) + 
     geom_line(size = 2.0, color = "#4C6788") + 
     geom_point(size = 4.0, color = "#4C6788") + 
     theme_behindbars() + 
-    scale_y_continuous(label = scales::comma) + 
+    scale_y_continuous(label = scales::comma, limits = c(45000, 47100)) + 
+    scale_x_date(limits = c(as.Date("2021-02-01"), Sys.Date())) + 
     labs(title = "Reported number of inmates that have ever had a positive test", 
          y = "Positive tests")
 
@@ -55,4 +74,3 @@ p3 <- ggplot(plot_df, aes(x = Date, y = delta)) +
 ggsave("p1.png", p1, width = 14, height = 10)
 ggsave("p2.png", p2, width = 14, height = 10)
 ggsave("p3.png", p3, width = 14, height = 10)
-
