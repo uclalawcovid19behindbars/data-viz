@@ -46,10 +46,29 @@ bibb_plot <- al %>%
   ggtitle("Multiple COVID-19 Outbreaks in Bibb Correctional Facility") 
 ggsave("bibb_historical.png", bibb_plot, width = 14, height = 10)
 ggplotly(bibb_plot)
-  
+
+## tutwiler
+tutwiler_plot <- al %>%
+  filter(Facility.ID == 39) %>% 
+  ggplot( aes(x=Date, 
+              y=active_rate)) +
+  geom_line(size = 1.5, color = "#D7790F") +
+  geom_area(alpha = .5, fill = "#D7790F") +
+  ylab("Estimated Active Case Rate") + 
+  scale_color_bbdiscrete() +
+  # scale_fill_manual(values = "#D7790F") +
+  scale_y_continuous(labels = scales::percent) + 
+  theme_behindbars() +
+  theme(legend.position = "none") +
+  ggtitle("Multiple COVID-19 Outbreaks in Tutwiler Prison For Women") 
+ggsave("tutwiler_historical.png", tutwiler_plot, width = 14, height = 10)
+
 
 ## Check out worst death rates
-al %>% arrange(desc(death_rate)) %>% relocate(death_rate, Residents.Deaths) %>% View()
+al %>% 
+  arrange(desc(death_rate)) %>% 
+  relocate(death_rate, Residents.Deaths) %>% 
+  View()
 
 hamilton <- al %>%
   filter(Facility.ID == 18) %>% 
@@ -64,3 +83,20 @@ hamilton <- al %>%
   theme(legend.position = "none") +
   ggtitle("Deaths of Incarcerated Individuals in \nHamilton Aged and Infirmed Facility") 
 ggsave("hamilton_deaths.png", hamilton, width = 14, height = 10)
+
+st_clair <- al %>%
+  filter(Name == "ST CLAIR CORRECTIONAL FACILITY") %>% 
+  ggplot( aes(x=Date, 
+              y=Residents.Deaths)) +
+  geom_line(size = 1.5, color = "#D7790F") +
+  ylab("COVID-19 Deaths") + 
+  scale_color_bbdiscrete() +
+  # scale_fill_manual(values = "#D7790F") +
+  theme_behindbars() +
+  scale_y_continuous(limits = c(0, 17)) + 
+  theme(legend.position = "none") +
+  ggtitle("Deaths of Incarcerated Individuals in \nSt. Clair Correctional Facility") 
+ggsave("stclair_deaths.png", st_clair, width = 14, height = 10)
+
+
+
