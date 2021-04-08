@@ -64,3 +64,23 @@ hamilton <- al %>%
   theme(legend.position = "none") +
   ggtitle("Deaths of Incarcerated Individuals in \nHamilton Aged and Infirmed Facility") 
 ggsave("hamilton_deaths.png", hamilton, width = 14, height = 10)
+
+
+al %>%
+  filter(Facility.ID == 18) %>%
+  select(Date, Residents.Deaths) %>%
+  mutate(Month = floor_date(Date, unit = "month")) %>%
+  group_by(Month) %>%
+  summarise(Residents.Deaths = first(max(Residents.Deaths, na.rm= TRUE))) %>%
+  mutate(Deaths = Residents.Deaths - lag(Residents.Deaths, default = 0)) %>%
+  mutate(DeathTxt = ifelse(Deaths == 0, NA, Deaths)) %>%
+  ggplot(aes(x=Month, y=Deaths, label = DeathTxt)) +
+  geom_col(color = "#D7790F", fill = "#D7790F") +
+  geom_text(nudge_y = .75, size = 8) +
+  ylab("COVID-19 Deaths\nPer Month") + 
+  scale_color_bbdiscrete() +
+  # scale_fill_manual(values = "#D7790F") +
+  theme_behindbars() +
+  scale_y_continuous(limits = c(0, 17)) + 
+  theme(legend.position = "none") +
+  ggtitle("Deaths of Incarcerated Individuals in \nHamilton Aged and Infirmed Facility") 
