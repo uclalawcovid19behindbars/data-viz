@@ -1,0 +1,66 @@
+library(behindbarstools)
+library(tidyverse)
+library(skimr)
+library(plotly)
+
+al <- read_scrape_data(all_dates = TRUE, state = "Alabama") 
+skim(al) ## not much testing data to speak of !
+
+al <- al %>%
+  arrange(Facility.ID, Date) %>% 
+  group_by(Facility.ID) %>% 
+  mutate(Res.Act.Est = diff_roll_sum(Residents.Confirmed, Date)) %>% 
+  fill(Residents.Population) %>% 
+  ungroup() %>%
+  filter(Jurisdiction == "state") %>%
+  mutate(active_rate = Res.Act.Est / Residents.Population) %>%
+  mutate(death_rate = Residents.Deaths / Residents.Population,
+         test_rate = Residents.Tested / Residents.Population) 
+
+## Plot all facilities together 
+facs <- al %>%
+  ggplot( aes(x=Date, y=Res.Act.Est, group=Name, color=Name)) +
+  geom_line() +
+  # scale_color_viridis(discrete = TRUE) +
+  # ggtitle("Popularity of American names in the previous 30 years") +
+  # theme_ipsum() +
+  ylab("Estimated Active Cases") + 
+  # scale_color_bbdiscrete() + 
+  theme_minimal() + 
+  theme(legend.position = "none")
+ggplotly(facs)
+
+## BIBB correctional facility - multiple outbreaks
+bibb_plot <- al %>%
+  filter(Facility.ID == 5) %>% 
+  ggplot( aes(x=Date, 
+              y=active_rate)) +
+  geom_line(size = 1.5, color = "#D7790F") +
+  geom_area(alpha = .5, fill = "#D7790F") +
+  ylab("Estimated Active Case Rate") + 
+  scale_color_bbdiscrete() +
+  # scale_fill_manual(values = "#D7790F") +
+  scale_y_continuous(labels = scales::percent) + 
+  theme_behindbars() +
+  theme(legend.position = "none") +
+  ggtitle("Multiple COVID-19 Outbreaks in Bibb Correctional Facility") 
+ggsave("bibb_historical.png", bibb_plot, width = 14, height = 10)
+ggplotly(bibb_plot)
+  
+
+## Check out worst death rates
+al %>% arrange(desc(death_rate)) %>% relocate(death_rate, Residents.Deaths) %>% View()
+
+hamilton <- al %>%
+  filter(Facility.ID == 18) %>% 
+  ggplot( aes(x=Date, 
+              y=Residents.Deaths)) +
+  geom_line(size = 1.5, color = "#D7790F") +
+  ylab("COVID-19 Deaths") + 
+  scale_color_bbdiscrete() +
+  # scale_fill_manual(values = "#D7790F") +
+  theme_behindbars() +
+  scale_y_continuous(limits = c(0, 17)) + 
+  theme(legend.position = "none") +
+  ggtitle("Deaths of Incarcerated Individuals in \nHamilton Aged and Infirmed Facility") 
+ggsave("hamilton_deaths.png", hamilton, width = 14, height = 10)
