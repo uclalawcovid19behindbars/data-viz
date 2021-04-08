@@ -6,6 +6,12 @@ library(plotly)
 
 state_df <- calc_aggregate_counts(all_dates = TRUE, state = TRUE)
 
+# average CFR
+"https://raw.githubusercontent.com/uclalawcovid19behindbars/data/" %>%
+    str_c("master/latest-data/state_aggregate_counts.csv") %>%
+    read_csv(col_types = cols()) %>% select(Residents.Confirmed, Residents.Deaths) %>% na.omit() %>% summarise_all(sum) %>% 
+    mutate(CFR = Residents.Deaths / Residents.Confirmed*1000)
+
 "https://raw.githubusercontent.com/uclalawcovid19behindbars/data/" %>%
     str_c("master/latest-data/state_aggregate_counts.csv") %>%
     read_csv(col_types = cols()) %>%

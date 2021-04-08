@@ -84,6 +84,22 @@ hamilton <- al %>%
   ggtitle("Deaths of Incarcerated Individuals in \nHamilton Aged and Infirmed Facility") 
 ggsave("hamilton_deaths.png", hamilton, width = 14, height = 10)
 
+
+
+al %>%
+  filter(Facility.ID == 18) %>%
+  select(Date, Residents.Deaths) %>%
+  mutate(Month = floor_date(Date, unit = "month")) %>%
+  group_by(Month) %>%
+  summarise(Residents.Deaths = first(max(Residents.Deaths, na.rm= TRUE))) %>%
+  mutate(Deaths = Residents.Deaths - lag(Residents.Deaths, default = 0)) %>%
+  mutate(DeathTxt = ifelse(Deaths == 0, NA, Deaths)) %>%
+  ggplot(aes(x=Month, y=Deaths, label = DeathTxt)) +
+  geom_col(color = "#D7790F", fill = "#D7790F") +
+  geom_text(nudge_y = .75, size = 8) +
+  ylab("COVID-19 Deaths\nPer Month") + 
+  ggtitle("Deaths of Incarcerated Individuals in \nHamilton Aged and Infirmed Facility")
+  
 st_clair <- al %>%
   filter(Name == "ST CLAIR CORRECTIONAL FACILITY") %>% 
   ggplot( aes(x=Date, 
@@ -97,7 +113,4 @@ st_clair <- al %>%
   theme(legend.position = "none") +
   ggtitle("Deaths of Incarcerated Individuals in \nSt. Clair Correctional Facility") 
 ggsave("stclair_deaths.png", st_clair, width = 14, height = 10)
-
-## new monthly deaths at st clair
-
 
