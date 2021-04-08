@@ -60,11 +60,11 @@ tutwiler_plot <- al %>%
   scale_y_continuous(labels = scales::percent) + 
   theme_behindbars() +
   theme(legend.position = "none") +
-  ggtitle("Multiple COVID-19 Outbreaks in Tutwiler Prison For Women") 
+  ggtitle("Ongoing COVID-19 Outbreaks in Tutwiler Prison For Women") 
 ggsave("tutwiler_historical.png", tutwiler_plot, width = 14, height = 10)
 
 
-## Check out worst death rates
+## Check out prisons with the worst death rates
 al %>% 
   arrange(desc(death_rate)) %>% 
   relocate(death_rate, Residents.Deaths) %>% 
@@ -98,5 +98,6 @@ st_clair <- al %>%
   ggtitle("Deaths of Incarcerated Individuals in \nSt. Clair Correctional Facility") 
 ggsave("stclair_deaths.png", st_clair, width = 14, height = 10)
 
+## new monthly deaths at st clair
 
 
