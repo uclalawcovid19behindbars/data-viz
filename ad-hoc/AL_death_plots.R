@@ -78,14 +78,18 @@ al_alld_df <- state_df %>%
     select(Date, Deaths = Val, Population = Residents.Population) %>%
     mutate(name = "AL DOC Prison\nPopulation") %>%
     bind_rows(al_gen_df) %>%
-    mutate(Death.Rate = Deaths / Population * 100000)
+    mutate(Death.Rate = Deaths / Population * 10000)
 
 al_alld_df %>%
+    mutate(Death.Rate = ifelse(
+        Date <= ymd("2020-04-12") & 
+            name == "AL DOC Prison\nPopulation", 0, Death.Rate
+    )) %>%
     ggplot(aes(x=Date, y = Death.Rate, color = name)) +
     geom_line(size = 2) +
     theme_behindbars() +
     scale_color_bbdiscrete() +
-    labs(color = "", y = "COVID Deaths Per\n100K People") +
+    labs(color = "", y = "COVID Deaths Per\n10K People") +
     scale_x_date(breaks = scales::pretty_breaks(n = 10))
 
 al_alld_df %>%
