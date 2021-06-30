@@ -10,24 +10,36 @@ base_size <- 18
 base_family <- "Helvetica"
 base_color <- "#555526"
 
+## statewide data from april 4 run:
+old_data <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/d923096bc0b15e2fe0ce02f835a9877e0a195758/latest-data/state_aggregate_counts.csv")
+
+out_data <- statewide %>%
+    left_join(old_data, by = "State", suffix = c("_current", "_april4")) %>%
+    mutate(change_cumulative = Residents.Confirmed_current - Residents.Confirmed_april4,
+           change_vax = Residents.Initiated_april4 - Residents.Initiated_current) 
+
 ## state-aggregate
-statewide_scatter <- statewide %>% 
+statewide_scatter <- out_data %>% 
   mutate(state_abbrev = translate_state(State, reverse = TRUE),
-         vax_pct = Residents.Initiated / Residents.Population, 
-         case_pct = Residents.Confirmed / Residents.Population) %>% 
+         vax_pct = Residents.Initiated_current / Residents.Population,
+         # vax_pct = change_vax / Residents.Population,
+         case_pct = change_cumulative / Residents.Population) %>% ## 3-month change in cumulative infections
   filter(!is.na(vax_pct) & !is.na(case_pct)) %>% 
   ggplot(aes(x = vax_pct, 
              y = case_pct,
              label = state_abbrev)) +
   geom_point(aes(
-                 size = Residents.Population),
+                 # size = Residents.Population
+                 ),
              alpha = 1/3) + 
-  scale_x_continuous(label = scales::percent, limits = c(0, 1)) + 
+  # scale_x_continuous(label = scales::percent, limits = c(0, 1)) + 
   scale_y_continuous(label = scales::percent, limits = c(0, 1)) + 
   theme_classic(base_family = base_family, base_size = base_size) + 
   geom_text(check_overlap = TRUE, nudge_y = 0.015, size = 4) + 
   theme(legend.position = "none")
 ggsave(filename = here("statewide-vax-scatter.png"), plot = statewide_scatter)
+
+
 
 ## facility-level 
 ## MN 
