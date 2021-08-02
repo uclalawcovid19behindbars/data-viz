@@ -44,19 +44,21 @@ gen_vax_df <- as_tibble(raw_cdc_vax$vaccination_data) %>%
 # ------------------------------------------------------------------------------
 # national: vaccination rate for prison staff
 # ------------------------------------------------------------------------------
+missing_staff_pop_states <- anchored_denoms %>%
+    filter(is.na(Staff.Population)) %>%
+    pull(State)
 
-missing_staff_vax_states <- agg_df %>%
-    filter(Measure == "Staff.Initiated") %>%
-    select(Missing) %>%
-    str_split(", |\n ") %>%
-    .[[1]]
+missing_staff_vax_states <- state_df %>%
+    filter(!is.na(Staff.Initiated)) %>%
+    pull(State)
 
-staff_vax_num <- agg_df %>%
-    filter(Measure == "Staff.Initiated") %>%
-    pull(Count)
+staff_vax_num <- state_df %>%
+    filter(!is.na(Staff.Initiated),
+           State %!in% missing_staff_pop_states) %>%
+    summarise(staff_vax = sum(Staff.Initiated)) %>%
+    pull(staff_vax)
 
 staff_vax_denom <- anchored_denoms %>%
-    ## ! NB: missing denoms for DE, GA, NJ
     filter(State %!in% missing_staff_vax_states) %>%
     summarise(ntl_staff_estimate = sum_na_rm(Staff.Population)) %>%
     pull(ntl_staff_estimate)
@@ -73,12 +75,12 @@ missing_staff_active_states <- state_df %>%
     pull(State)
 
 staff_active_num <- state_df %>%
-    filter(!is.na(Staff.Active)) %>%
+    filter(!is.na(Staff.Active),
+           State %!in% missing_staff_pop_states) %>%
     summarise(staff_active = sum(Staff.Active)) %>%
     pull(staff_active)
 
 staff_active_denom <- anchored_denoms %>%
-    ## NB: missing denoms for DE, LA
     filter(State %!in% missing_staff_active_states) %>%
     summarise(ntl_staff_estimate = sum_na_rm(Staff.Population)) %>%
     pull(ntl_staff_estimate)
