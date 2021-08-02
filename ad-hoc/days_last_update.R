@@ -17,17 +17,20 @@ plot_df <- last_df %>%
     # average across all scrapers for a given agency
     group_by(State) %>%
     summarize(days_late = mean(days_late), .groups = "drop") %>%
-    mutate(State = forcats::fct_reorder(State, days_late))
+    mutate(State = forcats::fct_reorder(State, days_late)) %>% 
+    mutate(days_late = days_late + 3) %>% 
+    # Manually add these 
+    add_row(State = "GA", days_late = as.numeric(
+        difftime(Sys.Date(), "2021-07-19", units = "days"))) %>% 
+    add_row(State = "MA", days_late = as.numeric(
+        difftime(Sys.Date(), "2021-07-15", units = "days")))
 
 p <- plot_df %>% 
-    # Manually add this 
-    add_row(State = "GA", days_late = 12) %>% 
-    add_row(State = "MA", days_late = 13) %>% 
     # Manually remove these 
-    filter(!State %in% c("AL", "DE")) %>% 
+    filter(!State %in% c("AL", "DE", "TN")) %>% 
     arrange(-days_late) %>% 
     mutate(State_ = translate_state(State)) %>% 
-    filter(days_late >= 10) %>% 
+    filter(days_late > 10) %>% 
     mutate(State_ = forcats::fct_reorder(State_, days_late)) %>% 
     ggplot(aes(x = State_, y = days_late, xend = State_, yend = 0, 
                label = ceiling(days_late))) +
@@ -47,4 +50,4 @@ p <- plot_df %>%
         axis.title.y = element_blank(),
         legend.position = "none") 
 
-ggsave("days_late.svg", p, width = 7, height = 4)
+ggsave("days_late.svg", p, width = 6, height = 4)
