@@ -178,7 +178,7 @@ national_vax_active_rates_out <- tibble(
         ),
     ) 
 
-
+write_csv(national_vax_active_rates_out, "~/Desktop/ntl_rates_comparison.csv")
 
 # ------------------------------------------------------------------------------
 # state: vaccination rates for staff/incarcerated people/overall pop
@@ -289,8 +289,3 @@ ggplot() +
     #                                "Prison staff members"))
 
 # ggsave("vaccine_comparison.svg", p, width = 9, height = 4)
-
-# ------------------------------------------------------------------------------
-# overall: active case rates for staff/incarcerated people/overall pop
-# ------------------------------------------------------------------------------
-
