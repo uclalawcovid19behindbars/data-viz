@@ -15,6 +15,11 @@ genpop_df <- "https://www2.census.gov/programs-surveys/popest/datasets/" %>%
     stringr::str_c("2010-2020/state/totals/nst-est2020.csv") %>%
     readr::read_csv(col_types = readr::cols()) %>%
     select(State = NAME, General.Population = POPESTIMATE2020)
+adultpop_df <- "https://www2.census.gov/programs-surveys/popest/datasets/" %>%
+    stringr::str_c("2010-2020/state/asrh/sc-est2020-18+pop-res.csv") %>%
+    readr::read_csv(col_types = readr::cols()) %>%
+    select(State = NAME,
+           General.Adult.Population = POPEST18PLUS2020)
 state_infections <- "https://data.cdc.gov/api/views/9mfq-cb36/rows.csv" %>%
     stringr::str_c("?accessType=DOWNLOAD") %>%
     readr::read_csv(col_types = readr::cols())
@@ -39,7 +44,10 @@ gen_vax_df <- as_tibble(raw_cdc_vax$vaccination_data) %>%
     mutate(Date = lubridate::ymd(Date)) %>%
     filter(Date == max(Date)) %>%
     left_join(genpop_df, by = "State") %>%
-    select(State, Date, General.Initiated, General.Population) 
+    left_join(adultpop_df, by = "State") %>% 
+    select(State, Date, General.Initiated, 
+           General.Population,
+           General.Adult.Population) 
 
 # ------------------------------------------------------------------------------
 # national: vaccination rate for prison staff
@@ -135,13 +143,16 @@ print(paste0("Estimated residents active case rate: ", prison_residents_active_r
 # national: vaccination rate for general, non-incarcerated population
 # ------------------------------------------------------------------------------
 
+sum(count*size)/sum(count)
+
 general_vax_df <- gen_vax_df %>%
     filter(!is.na(State)) %>%
-    summarise(general_vax_num = sum(General.Initiated),
-              general_vax_denom = sum(General.Population)) %>%
-    mutate(rate = general_vax_num / general_vax_denom)
+    mutate(state_initiated_rate = General.Initiated / General.Adult.Population)
 
-print(paste0("Estimated general vaccination rate: ", general_vax_df$rate))
+general_vax_weighted_mean <- weighted.mean(general_vax_df$state_initiated_rate, 
+                                           general_vax_df$General.Adult.Population)
+
+print(paste0("Estimated general vaccination rate: ", general_vax_weighted_mean))
 
 # ------------------------------------------------------------------------------
 # national: active case rate for general, non-incarcerated population
@@ -161,7 +172,7 @@ print(paste0("Estimated general active case rate: ", general_active_df$rate))
 
 national_vax_active_rates_out <- tibble(
     gen_active_rate = general_active_df$rate,
-    gen_initiated_rate = general_vax_df$rate,
+    gen_initiated_rate = general_vax_weighted_mean,
     staff_active_rate = prison_staff_active_rate,
     staff_initiated_rate = prison_staff_vax_rate,
     residents_active_rate = prison_residents_active_rate,
