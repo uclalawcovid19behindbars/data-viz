@@ -9,6 +9,8 @@ agg_df <- "https://raw.githubusercontent.com/uclalawcovid19behindbars/data/maste
     read_csv(col_types = cols())
 state_df <- "https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/latest-data/latest_state_counts.csv" %>% 
     read_csv(col_types = cols())
+state_historical_df <- "https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/historical-data/historical_state_counts.csv" %>% 
+    read_csv(col_types = cols())
 anchored_denoms <- "https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/anchored-data/state_aggregate_denominators.csv" %>%
     read_csv(col_types = cols())
 genpop_df <- "https://www2.census.gov/programs-surveys/popest/datasets/" %>%
@@ -23,21 +25,27 @@ adultpop_df <- "https://www2.census.gov/programs-surveys/popest/datasets/" %>%
 state_infections <- "https://data.cdc.gov/api/views/9mfq-cb36/rows.csv" %>%
     stringr::str_c("?accessType=DOWNLOAD") %>%
     readr::read_csv(col_types = readr::cols())
-gen_covid_df <- state_infections %>%
-    rename(state_abv = state) %>%
-    mutate(State = translate_state(state_abv)) %>%
-    mutate(Date = lubridate::mdy(submission_date)) %>%
-    filter(Date == max(Date)) %>%
-    select(
-        State, Date, 
-        General.Confirmed = tot_cases,
-        General.Death = tot_death,
-        General.Active = new_case) %>%
-    left_join(genpop_df, by = "State") 
 raw_cdc_vax <- str_c(
     "https://covid.cdc.gov/covid-data-tracker/COVIDData/", 
     "getAjaxData?id=vaccination_data") %>% 
     jsonlite::read_json(simplifyVector = TRUE) 
+## TRANSFORM DATA
+gen_covid_df <- state_infections %>%
+    rename(state_abv = state) %>%
+    mutate(State = translate_state(state_abv)) %>%
+    mutate(Date = lubridate::mdy(submission_date)) %>% 
+    group_by(state_abv) %>% 
+    arrange(Date) %>%
+    ## NB: not sure what the issue is here but numbers are not to be trusted !! 
+    mutate(General.DiffRollSum = diff_roll_sum(conf_cases, Date)) %>%
+    ungroup() %>%
+    select(
+        State, Date, 
+        General.Confirmed = tot_cases,
+        General.Death = tot_death,
+        General.Active = new_case,
+        General.DiffRollSum) %>%
+    left_join(genpop_df, by = "State") 
 gen_vax_df <- as_tibble(raw_cdc_vax$vaccination_data) %>% 
     mutate(General.Initiated = Administered_Dose1_Recip_18Plus)  %>% 
     mutate(State = translate_state(Location)) %>%
@@ -52,98 +60,136 @@ gen_vax_df <- as_tibble(raw_cdc_vax$vaccination_data) %>%
 # ------------------------------------------------------------------------------
 # national: vaccination rate for prison staff
 # ------------------------------------------------------------------------------
-missing_staff_pop_states <- anchored_denoms %>%
+(missing_staff_pop_states <- anchored_denoms %>%
     filter(is.na(Staff.Population)) %>%
-    pull(State)
+    pull(State))
 
-missing_staff_vax_states <- state_df %>%
+(missing_staff_vax_states <- state_df %>%
     filter(!is.na(Staff.Initiated)) %>%
-    pull(State)
+    pull(State))
+
+staff_denom <- anchored_denoms %>%
+    filter(!is.na(Staff.Population))
 
 staff_vax_num <- state_df %>%
-    filter(!is.na(Staff.Initiated),
-           State %!in% missing_staff_pop_states) %>%
-    summarise(staff_vax = sum(Staff.Initiated)) %>%
-    pull(staff_vax)
+    filter(!is.na(Staff.Initiated)) %>% 
+    select(State, Staff.Initiated)
 
-staff_vax_denom <- anchored_denoms %>%
-    filter(State %!in% missing_staff_vax_states) %>%
-    summarise(ntl_staff_estimate = sum_na_rm(Staff.Population)) %>%
-    pull(ntl_staff_estimate)
+staff_vax_df <- staff_vax_num %>%
+    left_join(staff_denom) %>%
+    filter(!is.na(Staff.Population)) %>%
+    mutate(rate = Staff.Initiated / Staff.Population)
+nrow(staff_vax_df)
 
-prison_staff_vax_rate <- staff_vax_num / staff_vax_denom
+prison_staff_vax_rate <- weighted.mean(staff_vax_df$rate, 
+                                           staff_vax_df$Staff.Population)
+
 print(paste0("Estimated staff vaccination rate: ", prison_staff_vax_rate))
 
 # ------------------------------------------------------------------------------
 # national: active case rate for prison staff
 # ------------------------------------------------------------------------------
 
-missing_staff_active_states <- state_df %>%
+(missing_staff_active_states <- state_df %>%
     filter(is.na(Staff.Active)) %>%
-    pull(State)
+    pull(State))
 
 staff_active_num <- state_df %>%
-    filter(!is.na(Staff.Active),
-           State %!in% missing_staff_pop_states) %>%
-    summarise(staff_active = sum(Staff.Active)) %>%
-    pull(staff_active)
+    filter(!is.na(Staff.Active)) %>%
+    select(State, Staff.Active)
 
-staff_active_denom <- anchored_denoms %>%
-    filter(State %!in% missing_staff_active_states) %>%
-    summarise(ntl_staff_estimate = sum_na_rm(Staff.Population)) %>%
-    pull(ntl_staff_estimate)
+staff_active_df <- staff_active_num %>%
+    left_join(staff_denom) %>%
+    filter(!is.na(Staff.Population)) %>%
+    mutate(rate = Staff.Active / Staff.Population)
+nrow(staff_active_df)
 
-prison_staff_active_rate <- staff_active_num / staff_active_denom
+prison_staff_active_rate <- weighted.mean(staff_active_df$rate, 
+                                          staff_active_df$Staff.Population)
+
 print(paste0("Estimated staff active case rate: ", prison_staff_active_rate))
+
+# ------------------------------------------------------------------------------
+# national: new case rate for prison staff (using diff_roll_sum)
+# ------------------------------------------------------------------------------
+
+## ! COME BACK TO THIS ! 
+# missing_staff_active_states <- state_df %>%
+#     filter(is.na(Staff.Active)) %>%
+#     pull(State)
+# 
+# staff_newcases_num <- state_historical_df %>%
+#     filter(!is.na(Staff.Confirmed)) %>%
+#     group_by(State) %>%
+#     mutate(Staff.Act.Est = diff_roll_sum(Staff.Confirmed, Date)) %>%
+#     ungroup() %>%
+#     summarise(staff_act_est = sum(Staff.Act.Est)) %>%
+#     pull(staff_act_est)
+# 
+# staff_act_est_denom <- anchored_denoms %>%
+#     filter(!is.na(Staff.Confirmed)) %>%
+#     summarise(ntl_staff_estimate = sum_na_rm(Staff.Population)) %>%
+#     pull(ntl_staff_estimate)
+# 
+# prison_staff_act_est_rate <- staff_newcases_num / staff_act_est_denom
+# print(paste0("Estimated staff estimated active case rate (using diff_roll_sum): ", 
+#              prison_staff_act_est_rate))
 
 # ------------------------------------------------------------------------------
 # national: vaccination rate for incarcerated people
 # ------------------------------------------------------------------------------
 
-missing_residents_vax_states <- agg_df %>%
-    filter(Measure == "Residents.Initiated") %>%
-    select(Missing) %>%
-    str_split(", |\n ") %>%
-    .[[1]]
+(missing_res_pop_states <- anchored_denoms %>%
+     filter(is.na(Residents.Population)) %>%
+     pull(State))
 
-residents_vax_num <- agg_df %>%
-    filter(Measure == "Residents.Initiated") %>%
-    pull(Count)
+(missing_res_vax_states <- state_df %>%
+        filter(!is.na(Residents.Initiated)) %>%
+        pull(State))
 
-residents_vax_denom <- anchored_denoms %>%
-    filter(State %!in% missing_residents_vax_states) %>%
-    summarise(ntl_residents_estimate = sum_na_rm(Residents.Population)) %>%
-    pull(ntl_residents_estimate)
+res_denom <- anchored_denoms %>%
+    filter(!is.na(Residents.Population))
 
-prison_residents_vax_rate <- residents_vax_num / residents_vax_denom
+res_vax_num <- state_df %>%
+    filter(!is.na(Residents.Initiated)) %>% 
+    select(State, Residents.Initiated)
+
+res_vax_df <- res_vax_num %>%
+    left_join(res_denom) %>%
+    filter(!is.na(Residents.Population)) %>%
+    mutate(rate = Residents.Initiated / Residents.Population)
+nrow(res_vax_df)
+
+prison_residents_vax_rate <- weighted.mean(res_vax_df$rate, 
+                                           res_vax_df$Residents.Population)
+
 print(paste0("Estimated residents vaccination rate: ", prison_residents_vax_rate))
 
 # ------------------------------------------------------------------------------
 # national: active case rate for incarcerated people
 # ------------------------------------------------------------------------------
 
-missing_residents_active_states <- state_df %>%
+(missing_residents_active_states <- state_df %>%
     filter(is.na(Residents.Active)) %>%
-    pull(State)
+    pull(State))
 
-residents_active_num <- state_df %>%
+res_active_num <- state_df %>%
     filter(!is.na(Residents.Active)) %>%
-    summarise(residents_active = sum(Residents.Active)) %>%
-    pull(residents_active)
+    select(State, Residents.Active)
 
-residents_active_denom <- anchored_denoms %>%
-    filter(State %!in% missing_residents_active_states) %>%
-    summarise(ntl_residents_estimate = sum_na_rm(Residents.Population)) %>%
-    pull(ntl_residents_estimate)
+res_active_df <- res_active_num %>%
+    left_join(res_denom) %>%
+    filter(!is.na(Residents.Population)) %>%
+    mutate(rate = Residents.Active / Residents.Population)
+nrow(res_active_df)
 
-prison_residents_active_rate <- residents_active_num / residents_active_denom
+prison_residents_active_rate <- weighted.mean(res_active_df$rate, 
+                                           res_active_df$Residents.Population)
 print(paste0("Estimated residents active case rate: ", prison_residents_active_rate))
 
 # ------------------------------------------------------------------------------
 # national: vaccination rate for general, non-incarcerated population
 # ------------------------------------------------------------------------------
-
-sum(count*size)/sum(count)
 
 general_vax_df <- gen_vax_df %>%
     filter(!is.na(State)) %>%
@@ -159,19 +205,21 @@ print(paste0("Estimated general vaccination rate: ", general_vax_weighted_mean))
 # ------------------------------------------------------------------------------
 
 general_active_df <- gen_covid_df %>%
-    filter(!is.na(State)) %>%
-    summarise(general_active_num = sum(General.Active),
-              general_active_denom = sum(General.Population)) %>%
-    mutate(rate = general_active_num / general_active_denom)
+    filter(!is.na(State),
+           !is.na(General.Active),
+           !is.na(General.Population)) %>%
+    mutate(rate = General.Active / General.Population)
 
-print(paste0("Estimated general active case rate: ", general_active_df$rate))
+general_active_weighted_mean <- weighted.mean(general_active_df$rate, 
+                                           general_active_df$General.Population)
+print(paste0("Estimated general active case rate: ", general_active_weighted_mean))
 
 # ------------------------------------------------------------------------------
 # combine national nums into one df
 # ------------------------------------------------------------------------------
 
 national_vax_active_rates_out <- tibble(
-    gen_active_rate = general_active_df$rate,
+    gen_active_rate = general_active_weighted_mean,
     gen_initiated_rate = general_vax_weighted_mean,
     staff_active_rate = prison_staff_active_rate,
     staff_initiated_rate = prison_staff_vax_rate,
