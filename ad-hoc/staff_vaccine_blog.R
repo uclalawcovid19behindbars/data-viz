@@ -1,3 +1,5 @@
+rm(list=ls())
+
 library(tidyverse)
 library(behindbarstools)
 library(scales)
@@ -18,9 +20,25 @@ genstate_covid_df <- genstate_covid_raw_df %>%
     filter(Date == max(.$Date))
 
 # Read state-aggregated COVID data 
-covid_df <- str_c("https://raw.githubusercontent.com/uclalawcovid19behindbars/", 
-                  "data/master/latest-data/latest_state_counts.csv") %>% 
-    read_csv(col_types = cols())
+latest_state_df <- calc_aggregate_counts(state = TRUE, all_dates = FALSE) 
+aggregate_pop <- read_aggregate_pop_data() 
+
+COVID_SUFFIXES <- c(
+    ".Confirmed", ".Deaths", ".Tadmin", ".Tested", ".Active",
+    ".Initiated", ".Completed", ".Vadmin"
+)
+
+covid_df <- latest_state_df %>%
+    filter(!is.na(Val)) %>%
+    select(State, Measure, Val) %>%
+    pivot_wider(names_from = "Measure", values_from = "Val") %>%
+    select(State, ends_with(COVID_SUFFIXES)) %>% 
+    left_join(aggregate_pop, by = "State") 
+
+# Alt: read from latest csv since barstools is slow 
+# covid_df <- str_c("https://raw.githubusercontent.com/uclalawcovid19behindbars/", 
+#                   "data/master/latest-data/latest_state_counts.csv") %>% 
+#     read_csv(col_types = cols())
 
 # Read state-aggregated vaccine data with media sources 
 vaccine_df <- "1tc3p3FHG0tCHnlfb8YAABno_oh9JSNL4MNfhn_clyX0" %>% 
@@ -85,7 +103,7 @@ staff_bars <- joined_df %>%
                   label = percent(General.Pct, accuracy = 1)), 
               color = "#4C6788") + 
     scale_x_continuous(label = percent, limits = c(0, 1)) +
-    theme_minimal(base_size = 13) + 
+    theme_minimal(base_size = 15) + 
     theme(axis.title.x = element_blank(), 
           axis.title.y = element_blank(), 
           axis.text.x = element_blank(), 
@@ -169,12 +187,12 @@ base_family <- "Helvetica"
 base_color <- "black"
 
 active_compare_plot <- joined_df %>% 
-    filter(Staff.Active > 10) %>% 
+    filter(Staff.Active > 15) %>% 
     mutate(Staff.Active.Pct = Staff.Active / Staff.Population * SCALE, 
            Res.Active.Pct = Residents.Active / Residents.Population * SCALE, 
            General.Active.Pct = General.Active / General.Population * SCALE) %>% 
     select(State, ends_with("Active"), ends_with("Pct")) %>% 
-    filter(Staff.Active.Pct / General.Active.Pct > 1.1) %>% 
+    filter(Staff.Active.Pct / General.Active.Pct > 1.1) %>%
     drop_na() %>% 
     mutate(label_text = str_c(round(Staff.Active.Pct / General.Active.Pct, 1), "x"), 
            label_position = Staff.Active.Pct + 9) %>%  
@@ -187,14 +205,14 @@ active_compare_plot <- joined_df %>%
         size_xend = 3,
         colour = "#C1C4b9",
         size = 1.0,
-        colour_x = "#D7790F", 
+        colour_x = "#4C6788", 
         alpha = 0.8,
-        colour_xend = "#4C6788") + 
+        colour_xend = "#D7790F") + 
     geom_text(
         aes(x = label_position, 
             y = reorder(stringr::str_to_title(State), -General.Active.Pct), 
             label = label_text), 
-        color = "#4C6788", 
+        color = "#D7790F", 
         size = 6) + 
     labs(x = "New cases per 10k") + 
     scale_x_continuous(limits = c(0, 150)) +
@@ -255,15 +273,16 @@ plot_df <- active_est_df %>%
     filter(State %in% keep_states) %>% 
     group_by(Date, Measure) %>% 
     mutate(Val = ifelse(Val < 0, 0, Val)) %>% 
-    summarise(cases = sum_na_rm(Val)) 
+    summarise(cases = sum_na_rm(Val)) %>% 
+    filter(Date < "2021-08-07")
 
 stacked_pct_plot <- plot_df %>% 
     ggplot(aes(x = Date, y = cases, fill = Measure)) + 
     geom_bar(stat = "identity", position = "fill") + 
-    theme_behindbars(base_size = 14, base_color = "black") +
+    theme_behindbars(base_size = 16, base_color = "black") +
     scale_y_continuous(label = percent, breaks = pretty_breaks(n = 2)) +
     scale_x_date(label = date_format("%b '%y"), breaks = pretty_breaks(n = 10)) + 
-    scale_fill_bbdiscrete() + 
+    scale_fill_manual(values = c("#CDCFBE", "#D7790F")) + 
     labs(y = "Share of active cases") + 
     theme(legend.position = "none", 
           legend.title = element_blank())
@@ -271,28 +290,16 @@ stacked_pct_plot <- plot_df %>%
 stacked_plot <- plot_df %>% 
     ggplot(aes(x = Date, y = cases, fill = Measure)) + 
     geom_bar(stat = "identity") + 
-    theme_behindbars(base_size = 14, base_color = "black") +
+    theme_behindbars(base_size = 16, base_color = "black") +
     scale_y_continuous(label = comma, breaks = pretty_breaks()) + 
     scale_x_date(label = date_format("%b '%y"), breaks = pretty_breaks(n = 10)) + 
-    scale_fill_bbdiscrete() + 
+    scale_fill_manual(values = c("#CDCFBE", "#D7790F")) + 
     labs(y = "Estimated active cases") + 
     theme(legend.position = "none", 
           legend.title = element_blank())
 
-facet_plot <- plot_df %>% 
-    ggplot(aes(x = Date, y = cases, fill = Measure)) + 
-    geom_bar(stat = "identity") + 
-    facet_wrap(~Measure, ncol = 1, scales = "free") + 
-    theme_behindbars(base_size = 14, base_color = "black") +
-    scale_y_continuous(label = comma, breaks = pretty_breaks()) + 
-    scale_x_date(label = date_format("%b '%y"), breaks = pretty_breaks(n = 10)) + 
-    scale_fill_bbdiscrete() + 
-    labs(y = "Estimated active cases") + 
-    theme(legend.position = "none", 
-          legend.title = element_blank())
-
-weekly_active <- ggpubr::ggarrange(stacked_pct_plot, stacked_plot, 
-                                   heights = c(1, 2),
+weekly_active <- ggpubr::ggarrange(stacked_plot, stacked_pct_plot, 
+                                   heights = c(2, 1),
                                    ncol = 1, nrow = 2, align = "v")
 
 ggsave("weekly_active.svg", weekly_active, width = 8, height = 6)
