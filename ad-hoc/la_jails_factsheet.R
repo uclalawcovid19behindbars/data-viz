@@ -37,7 +37,7 @@ laj_pop <- laj %>%
 ggsave("laj_pop.png", laj_pop, width = 9, height = 5)
 ggsave("laj_pop.svg", laj_pop, width = 10, height = 8)
 
-## tests administered 
+## plot of tests administered 
 laj_tadmin <- laj %>% 
     filter(!is.na(Residents.Tadmin),
            Date != "2021-06-02",
@@ -59,7 +59,9 @@ laj_tadmin <- laj %>%
     # labs(title = "Staff Cumulative Cases",
     #      subtitle = "Los Angeles Jails") + 
     scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") 
-ggsave("laj_tadmin.png", laj_staff, width = 9, height = 5)
+
+ggsave("laj_tadmin.png", laj_tadmin, width = 9, height = 5)
+ggsave("laj_tadmin.svg", laj_tadmin, width = 10, height = 8)
 
 ## table of monthly population numbers
 laj %>% 
