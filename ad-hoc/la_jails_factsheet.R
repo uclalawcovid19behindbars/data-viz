@@ -75,3 +75,35 @@ laj %>%
            `Tests Adminstered to Incarcerated Individuals` = Residents.Tadmin, 
            `Total Incarcerated Population` =Residents.Population) %>%
     write_csv("~/Downloads/laj_dat.csv", na = "")
+
+## only because read_scrape_data is broken :0
+raw_dat <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/historical-data/historical_facility_counts.csv")
+laj <- raw_dat %>%
+    filter(Facility.ID == 135)
+
+laj_active <- laj %>% 
+    filter(!is.na(Residents.Active)
+           # Date != "2021-06-02",
+           # Date != "2021-08-27",
+           # Date != "2021-04-09",
+           # Date != "2021-04-11",
+           # Date != "2021-03-19",
+           # Date != "2021-04-14"
+           ) %>%
+    ggplot() + 
+    geom_line(aes(x = Date, y = Residents.Active), size = 1.0, color = "#D7790F") + 
+    theme_behindbars() + 
+    theme(
+        axis.ticks.y = element_line(color = "#555526"), 
+        axis.title.y = element_blank(), 
+        axis.line.y = element_line(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank()) + 
+    # labs(title = "Staff Cumulative Cases",
+    #      subtitle = "Los Angeles Jails") + 
+    scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") 
+
+ggsave("laj_active.png", laj_active, width = 9, height = 5)
+ggsave("laj_active.svg", laj_active, width = 10, height = 8)
+
+
