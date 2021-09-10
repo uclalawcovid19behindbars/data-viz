@@ -6,6 +6,10 @@ raw_dat <- behindbarstools::read_scrape_data(all_dates = TRUE, state = "Californ
 laj <- raw_dat %>%
     filter(Name == "LOS ANGELES JAILS")
 
+latest_laj <- laj %>%
+    filter(Date == max(Date))
+latest_laj$Residents.Initiated / latest_laj$Residents.Population
+
 fac_data <- behindbarstools::read_fac_info()
 laj_info <- fac_data %>%
     filter(Name == "LOS ANGELES JAILS")
@@ -36,6 +40,38 @@ laj_pop <- laj %>%
 
 ggsave("laj_pop.png", laj_pop, width = 9, height = 5)
 ggsave("laj_pop.svg", laj_pop, width = 10, height = 8)
+
+## plot of staff over time
+laj_staff <- laj %>% 
+    mutate(staff_active_dfr = diff_roll_sum(Staff.Confirmed)) %>%
+    ggplot() + 
+    geom_line(aes(x = Date, y = staff_active_dfr), size = 1.0, color = "#D7790F") + 
+    theme_behindbars() + 
+    # scale_y_continuous(limits = c(12000, 15500), label = scales::comma) +
+    scale_y_continuous(limits = c(0, 800)) +
+    theme(
+        axis.ticks.y = element_line(color = "#555526"), 
+        axis.title.y = element_blank(), 
+        axis.line.y = element_line(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank()) + 
+    labs(title = "Staff COVID Cases",
+         subtitle = "Los Angeles Jails") + 
+    ylab("Estimated Staff Active Cases") + 
+    ## capacity source: 
+    ## http://www.la-sheriff.org/s2/static_content/info/documents/Custody%20Division%20Population%202019%20Third%20Quarter%20Report.pdf
+    scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") 
+
+## overlay plot of staff and resident
+laj_staff_res <- laj %>% 
+    mutate(staff_active_dfr = diff_roll_sum(Staff.Confirmed)) %>%
+    ggplot() + 
+    geom_line(aes(x = Date, y = staff_active_dfr), size = 1.0, color = "#D7790F") + 
+    geom_line(aes(x = Date, y = Residents.Active), size = 1.0, color = "#555526") + 
+    theme_behindbars() 
+    # scale_y_continuous(limits = c(12000, 15500), label = scales::comma) +
+    # scale_y_continuous(limits = c(0, 800)) +
+ggsave("laj_staff_res.png", laj_staff_res, width = 9, height = 5)
 
 ## plot of tests administered 
 laj_tadmin <- laj %>% 
