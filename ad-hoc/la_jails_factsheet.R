@@ -4,11 +4,16 @@ library(behindbarstools)
 raw_dat <- behindbarstools::read_scrape_data(all_dates = TRUE, state = "California")
 
 laj <- raw_dat %>%
-    filter(Name == "LOS ANGELES JAILS")
-
+    filter(Name == "LOS ANGELES JAILS") %>%
+    mutate(staff_active_dfr = diff_roll_sum(Staff.Confirmed)) 
+    
 latest_laj <- laj %>%
     filter(Date == max(Date))
 latest_laj$Residents.Initiated / latest_laj$Residents.Population
+
+## jail overcapacity metric
+jail_capacity <- 12404
+(((latest_laj$Residents.Population - jail_capacity) / jail_capacity))*100 + 100
 
 fac_data <- behindbarstools::read_fac_info()
 laj_info <- fac_data %>%
