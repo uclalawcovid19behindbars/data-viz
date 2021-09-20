@@ -13,26 +13,30 @@ sw_deaths <- tibble(
     pivot_longer(!Year, names_to = "variable", values_to = "count") %>%
     group_by(Year) %>%
     mutate(label_y = cumsum(count)) %>%
-    ungroup()
+    ungroup() %>%
+    mutate(Date = as.Date(glue("{Year}-01-01"))) %>%
+    mutate(partial_dat_alpha = ifelse(Year == 2021, .6, 1))
 
 #PLOT 
 statewide_homicides_suicides <- sw_deaths %>%
     ggplot(aes(
-        x = Year, y = count)) +
-    geom_col(aes(color = variable, fill = variable), position = position_stack()) +
+        x = Date, y = count)) +
+    geom_col(aes(color = variable, fill = variable, alpha = partial_dat_alpha), 
+             position = position_stack()) +
     theme_behindbars() +
     scale_color_bbdiscrete() +
+    scale_fill_bbdiscrete() +
     theme(
         axis.ticks.y = element_line(color = "#555526"), 
         axis.title.y = element_blank(), 
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    # scale_x_date(date_breaks = "1 year", date_labels =  "%Y") + 
+    scale_x_date(date_breaks = "1 year", date_labels =  "%Y") +
     labs(y = "N deaths",
          title = "Deaths in Georgia State Prisons",
          tag = "G") + 
-    geom_text(aes(y = label_y, label = count), size = 4, vjust = 1.5)
+    geom_text(aes(y = label_y, label = count), size = 6, vjust = 1.5) 
     
 ggsave("~/Desktop/ga_viz/statewide_homicides_suicides.png", statewide_homicides_suicides, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/statewide_homicides_suicides.svg", statewide_homicides_suicides, width = 7, height = 5)
@@ -82,29 +86,30 @@ fac_hom_suicides <- fac_suicides %>%
     full_join(fac_staff_vac_dat, by = "facility") %>%
     mutate(n_homicide_plus_suicide = n_suicides + n_homicides) ## na rm treatment here?
 
-
 #PLOT 
 fac_staff_vac_plot <- fac_hom_suicides %>%
     filter(!is.na(vac_rate)) %>%
     ggplot(aes(
-        x = facility, y = vac_rate)) +
+        x = reorder(facility, vac_rate), y = vac_rate)) +
     coord_flip() + 
     geom_col(aes(color = security_lvl, fill = security_lvl)) +
     theme_behindbars() +
     scale_color_bbdiscrete() +
+    scale_fill_bbdiscrete() +
     theme(
         axis.ticks.y = element_line(color = "#555526"), 
         axis.title.y = element_blank(), 
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    labs(y = "N deaths",
-         title = "Staff Vacancy Rates in Georgia State Prisons",
+    labs(title = "Staff Vacancy Rates in Georgia State Prisons",
          tag = "H") + 
-    scale_y_continuous(labels = scales::percent) #+ 
+    scale_y_continuous(labels = scales::percent, limits = c(0, 1)) + 
+    geom_text(aes(label = (round(vac_rate*100, 0))), 
+                  size = 6, hjust = 1)# + 
     # geom_text(aes(label = glue("Suicides: {n_suicides}, Homicides: {n_suicides}")))
 
-ggsave("~/Desktop/ga_viz/fac_staff_vac_plot.png", fac_staff_vac_plot, width = 10, height = 8)
+ggsave("~/Desktop/ga_viz/fac_staff_vac_plot.png", fac_staff_vac_plot, width = 15, height = 8)
 ggsave("~/Desktop/ga_viz/fac_staff_vac_plot.svg", fac_staff_vac_plot, width = 7, height = 5)
 
 
