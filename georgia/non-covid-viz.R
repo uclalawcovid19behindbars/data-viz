@@ -15,7 +15,7 @@ sw_deaths <- tibble(
     mutate(label_y = cumsum(count)) %>%
     ungroup() %>%
     mutate(Date = as.Date(glue("{Year}-01-01"))) %>%
-    mutate(partial_dat_alpha = ifelse(Year == 2021, .6, 1))
+    mutate(partial_dat_alpha = ifelse(Year == 2021, .8, 1))
 
 #PLOT 
 statewide_homicides_suicides <- sw_deaths %>%
@@ -31,12 +31,14 @@ statewide_homicides_suicides <- sw_deaths %>%
         axis.title.y = element_blank(), 
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
-        panel.grid.major.x = element_blank()) + 
+        panel.grid.major.x = element_blank(),
+        axis.text.x = element_text(angle = 45, vjust = 0.8, hjust=1)) + 
     scale_x_date(date_breaks = "1 year", date_labels =  "%Y") +
     labs(y = "N deaths",
          title = "Deaths in Georgia State Prisons",
          tag = "G") + 
-    geom_text(aes(y = label_y, label = count), size = 6, vjust = 1.5) 
+    geom_text(aes(y = label_y, label = count), size = 6, vjust = 1.5) +
+    scale_alpha(guide = 'none')
     
 ggsave("~/Desktop/ga_viz/statewide_homicides_suicides.png", statewide_homicides_suicides, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/statewide_homicides_suicides.svg", statewide_homicides_suicides, width = 7, height = 5)
@@ -110,6 +112,6 @@ fac_staff_vac_plot <- fac_hom_suicides %>%
     # geom_text(aes(label = glue("Suicides: {n_suicides}, Homicides: {n_suicides}")))
 
 ggsave("~/Desktop/ga_viz/fac_staff_vac_plot.png", fac_staff_vac_plot, width = 15, height = 8)
-ggsave("~/Desktop/ga_viz/fac_staff_vac_plot.svg", fac_staff_vac_plot, width = 7, height = 5)
+ggsave("~/Desktop/ga_viz/fac_staff_vac_plot.svg", fac_staff_vac_plot, width = 12, height = 5)
 
 
