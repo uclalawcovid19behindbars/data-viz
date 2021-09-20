@@ -18,7 +18,7 @@ ga_state <- raw_dat %>%
            res_cfr = ifelse(res_new_deaths < 0, NA, res_cfr),
            res_cfr = ifelse(is.infinite(res_cfr), NA, res_cfr),
            res_cfr = ifelse(is.nan(res_cfr), NA, res_cfr)) 
-write_csv(ga_state, "~/Desktop/ga_state.csv")
+# write_csv(ga_state, "~/Desktop/ga_state.csv")
 
 latest_ga <- ga_state %>%
     filter(Date == max(Date))
@@ -46,16 +46,16 @@ ga_statewide <- historical_statewide %>%
            ) %>%
     ## diff_roll_sum() still makes estimate from NA data
     filter(Date <= as.Date("2021-07-12"))
-write_csv(ga_statewide, "~/Desktop/ga_statewide.csv")
+# write_csv(ga_statewide, "~/Desktop/ga_statewide.csv")
 
 ## get general population data and create metrics for analysis 
-# ga_general <- behindbarstools::get_genstate_covid() %>%
-#     filter(State == "Georgia") %>%
-#     mutate(gen_active_df = diff_roll_sum(General.Confirmed),
-#            gen_active_dfr = gen_active_df / General.Population,
-#            gen_cumulative_rate = General.Confirmed / General.Population)
+ga_general <- behindbarstools::get_genstate_covid() %>%
+    filter(State == "Georgia") 
 ga_general <- ga_general %>%
-    mutate( gen_deaths_lag = dplyr::lag(General.Deaths, order_by = Date),
+    mutate( gen_active_df = diff_roll_sum(General.Confirmed),
+            gen_active_dfr = gen_active_df / General.Population,
+            gen_cumulative_rate = General.Confirmed / General.Population,
+            gen_deaths_lag = dplyr::lag(General.Deaths, order_by = Date),
             gen_new_deaths = General.Deaths - gen_deaths_lag,
             gen_newdeath_rate = gen_new_deaths / General.Population,
             gen_cfr = gen_new_deaths / gen_active_df ,
@@ -118,8 +118,31 @@ ga_genpop_compare_active <- ga_statewide_df %>%
 ggsave("~/Desktop/ga_viz/ga_genpop_compare_active.png", ga_genpop_compare_active, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/ga_genpop_compare_active.svg", ga_genpop_compare_active, width = 7, height = 5)
 
+# A2: A state pop - active  ------------------------------
+ga_genpop_active <- ga_statewide_df %>% 
+    ggplot() + 
+    ## blue = state pop
+    geom_line(aes(x = Date, y = gen_active_dfr), size = 1.0, color = "#4C6788") +
+    theme_behindbars() +
+    theme(
+        axis.ticks.y = element_line(color = "#555526"), 
+        axis.title.y = element_blank(), 
+        axis.line.y = element_line(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank()) + 
+    geom_vline(xintercept = as.Date("2021-07-12"), size = 1.5, color = "#000000") + 
+    scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") + 
+    scale_y_continuous(labels = scales::percent) +
+    labs(y = "Active COVID-19 Case Rate (estimated)",
+         title = "Active COVID-19 case rate",
+         subtitle = "Georgia statewide",
+         tag = "A2")
+ggsave("~/Desktop/ga_viz/ga_genpop_active.png", ga_genpop_active, width = 10, height = 8)
+ggsave("~/Desktop/ga_viz/ga_genpop_active.svg", ga_genpop_active, width = 7, height = 5)
+
+
 # B: Statewide prison vs GA state pop - cumulative death rate  ------------------------------
-ga_genpop_compare_active <- ga_statewide_df %>% 
+ga_genpop_compare_deaths <- ga_statewide_df %>% 
     ggplot() + 
     ## blue = state pop
     geom_line(aes(x = Date, y = gen_deathrate), size = 1.0, color = "#4C6788") +
@@ -142,8 +165,8 @@ ga_genpop_compare_active <- ga_statewide_df %>%
          title = "COVID-19 cumulative death rate",
          subtitle = "GA statewide (blue) and state prison population (orange)",
          tag = "B")
-ggsave("~/Desktop/ga_viz/ga_genpop_compare_active.png", ga_genpop_compare_active, width = 10, height = 8)
-ggsave("~/Desktop/ga_viz/ga_genpop_compare_active.svg", ga_genpop_compare_active, width = 7, height = 5)
+ggsave("~/Desktop/ga_viz/ga_genpop_compare_deaths.png", ga_genpop_compare_deaths, width = 10, height = 8)
+ggsave("~/Desktop/ga_viz/ga_genpop_compare_deaths.svg", ga_genpop_compare_deaths, width = 7, height = 5)
 
 # C: Statewide prison vs GA state pop - monthly new death rate  ------------------------------
 ga_genpop_compare_deaths_monthly <- monthly_df %>% 
@@ -300,8 +323,8 @@ facility_deaths <- ga_state %>%
          subtitle = "COVID-19 Deaths Among Incarcerated People",
          tag = "F") + 
     theme(legend.position = "none")
-ggsave("~/Desktop/ga_viz/facility_casefatalityrate.png", facility_casefatalityrate, width = 10, height = 8)
-ggsave("~/Desktop/ga_viz/facility_casefatalityrate.svg", facility_casefatalityrate, width = 7, height = 5)
+ggsave("~/Desktop/ga_viz/facility_deaths.png", facility_deaths, width = 10, height = 8)
+ggsave("~/Desktop/ga_viz/facility_deaths.svg", facility_deaths, width = 7, height = 5)
 
 
 # Case fatality rate analysis ---------------------------------------------------------
@@ -373,7 +396,7 @@ ga_genpop_compare_deaths_daily <- ga_statewide_df %>%
     labs(y = "COVID-19 Daily Death Rate (estimated)",
          title = "COVID-19 daily death rate",
          subtitle = "GA statewide (blue) and state prison population (orange)",
-         tag = "C")
+         tag = "")
 
 # PLOT: statewide prison vs GA state pop - monthly new case rate  ------------------------------
 ga_genpop_compare_deaths_monthly <- monthly_df %>% 

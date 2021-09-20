@@ -1,5 +1,6 @@
 library(tidyverse)
 library(behindbarstools)
+library(glue)
 
 ######## GDC (statewide) death metrics
 
@@ -7,9 +8,12 @@ library(behindbarstools)
 sw_deaths <- tibble(
     Year = c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021),
     Suicides = c(5, 7, 8, 19, 17, 16, 24, 14),
-    Homicides = c(5, 2, 5, 8, 9, 8, 29, 18)
+    Homicides = c(5, 2, 5, 8, 9, 8, 29, 18),
     ) %>%
-    pivot_longer(!Year, names_to = "variable", values_to = "count")
+    pivot_longer(!Year, names_to = "variable", values_to = "count") %>%
+    group_by(Year) %>%
+    mutate(label_y = cumsum(count)) %>%
+    ungroup()
 
 #PLOT 
 statewide_homicides_suicides <- sw_deaths %>%
@@ -27,7 +31,9 @@ statewide_homicides_suicides <- sw_deaths %>%
     # scale_x_date(date_breaks = "1 year", date_labels =  "%Y") + 
     labs(y = "N deaths",
          title = "Deaths in Georgia State Prisons",
-         tag = "G") 
+         tag = "G") + 
+    geom_text(aes(y = label_y, label = count), size = 4, vjust = 1.5)
+    
 ggsave("~/Desktop/ga_viz/statewide_homicides_suicides.png", statewide_homicides_suicides, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/statewide_homicides_suicides.svg", statewide_homicides_suicides, width = 7, height = 5)
 
@@ -74,14 +80,15 @@ fac_homicides <- tibble(
 fac_hom_suicides <- fac_suicides %>%
     full_join(fac_homicides, by = "facility") %>%
     full_join(fac_staff_vac_dat, by = "facility") %>%
-    mutate(n_homicide_plus_suicide = sum(n_suicides, n_homicides, na.rm = TRUE))
+    mutate(n_homicide_plus_suicide = n_suicides + n_homicides) ## na rm treatment here?
 
 
 #PLOT 
 fac_staff_vac_plot <- fac_hom_suicides %>%
     filter(!is.na(vac_rate)) %>%
     ggplot(aes(
-        x = vac_rate, y = facility)) +
+        x = facility, y = vac_rate)) +
+    coord_flip() + 
     geom_col(aes(color = security_lvl, fill = security_lvl)) +
     theme_behindbars() +
     scale_color_bbdiscrete() +
@@ -91,11 +98,11 @@ fac_staff_vac_plot <- fac_hom_suicides %>%
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    # scale_x_date(date_breaks = "1 year", date_labels =  "%Y") + 
     labs(y = "N deaths",
          title = "Staff Vacancy Rates in Georgia State Prisons",
          tag = "H") + 
-    scale_x_continuous(labels = scales::percent) 
+    scale_y_continuous(labels = scales::percent) #+ 
+    # geom_text(aes(label = glue("Suicides: {n_suicides}, Homicides: {n_suicides}")))
 
 ggsave("~/Desktop/ga_viz/fac_staff_vac_plot.png", fac_staff_vac_plot, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/fac_staff_vac_plot.svg", fac_staff_vac_plot, width = 7, height = 5)
