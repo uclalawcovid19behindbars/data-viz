@@ -1,6 +1,7 @@
 library(tidyverse)
 library(lubridate)
 library(behindbarstools)
+library(zoo)
 
 ## read facility-level data
 raw_dat <- behindbarstools::read_scrape_data(all_dates = TRUE, state = "Georgia")
@@ -41,11 +42,12 @@ ga_statewide <- historical_statewide %>%
            res_cfr = ifelse(is.infinite(res_cfr), NA, res_cfr),
            res_deathrate = Residents.Deaths / ga_prison_pop,
            res_newdeath_rate = res_new_deaths / ga_prison_pop,
+           res_cfr_7day = zoo::rollmean(res_cfr, k = 7, fill = NA)
            # staff_cfr = diff_roll_sum(Staff.Confirmed, Date) / diff_roll_sum(Staff.Deaths, Date),
            # staff_cfr = ifelse(is.infinite(staff_cfr), NA, staff_cfr)
            ) %>%
     ## diff_roll_sum() still makes estimate from NA data
-    filter(Date <= as.Date("2021-07-12"))
+    filter(Date < as.Date("2021-07-16"))
 # write_csv(ga_statewide, "~/Desktop/ga_statewide.csv")
 
 ## get general population data and create metrics for analysis 
@@ -63,7 +65,8 @@ ga_general <- ga_general %>%
             gen_cfr = ifelse(gen_new_deaths < 0, NA, gen_cfr),
             gen_cfr = ifelse(is.infinite(gen_cfr), NA, gen_cfr),
             gen_cfr = ifelse(is.nan(gen_cfr), NA, gen_cfr),
-            gen_deathrate = General.Deaths / General.Population) 
+            gen_deathrate = General.Deaths / General.Population,
+            gen_cfr_7day = zoo::rollmean(gen_cfr, k = 7, fill = NA)) 
 #write_csv(ga_general, "~/Desktop/ga_general.csv")
 
 ga_statewide_df <- ga_general %>%
@@ -95,11 +98,11 @@ monthly_df <- ga_statewide_df %>%
 ga_genpop_compare_active <- ga_statewide_df %>% 
     ggplot() + 
     ## blue = state pop
-    geom_line(aes(x = Date, y = gen_active_dfr), size = 1.0, color = "#4C6788") +
+    geom_line(aes(x = Date, y = gen_active_dfr*10000), size = 1.0, color = "#4C6788") +
     ## orange = prison 
     geom_line(
         data = ga_statewide %>% filter(!is.na(res_active_dfr)),
-        aes(x = Date, y = res_active_dfr), size = 1.0, color = "#D7790F"
+        aes(x = Date, y = res_active_dfr*10000), size = 1.0, color = "#D7790F"
         ) + 
     theme_behindbars() +
     theme(
@@ -108,11 +111,11 @@ ga_genpop_compare_active <- ga_statewide_df %>%
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    geom_vline(xintercept = as.Date("2021-07-12"), size = 1.5, color = "#000000") + 
-    scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") + 
-    scale_y_continuous(labels = scales::percent) +
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") + 
+    scale_x_date(date_breaks = "2 month", date_labels =  "%b") + 
+    # scale_y_continuous(labels = scales::percent) +
     labs(y = "Active COVID-19 Case Rate (estimated)",
-         title = "Active COVID-19 case rate",
+         title = "Active COVID-19 cases per 10,000",
          subtitle = "GA statewide (blue) and state prison population (orange)",
          tag = "A")
 ggsave("~/Desktop/ga_viz/ga_genpop_compare_active.png", ga_genpop_compare_active, width = 10, height = 8)
@@ -122,7 +125,7 @@ ggsave("~/Desktop/ga_viz/ga_genpop_compare_active.svg", ga_genpop_compare_active
 ga_genpop_active <- ga_statewide_df %>% 
     ggplot() + 
     ## blue = state pop
-    geom_line(aes(x = Date, y = gen_active_dfr), size = 1.0, color = "#4C6788") +
+    geom_line(aes(x = Date, y = gen_active_dfr*10000), size = 1.0, color = "#4C6788") +
     theme_behindbars() +
     theme(
         axis.ticks.y = element_line(color = "#555526"), 
@@ -130,16 +133,14 @@ ga_genpop_active <- ga_statewide_df %>%
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    geom_vline(xintercept = as.Date("2021-07-12"), size = 1.5, color = "#000000") + 
-    scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") + 
-    scale_y_continuous(labels = scales::percent) +
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") + 
+    scale_x_date(date_breaks = "2 month", date_labels =  "%b") + 
     labs(y = "Active COVID-19 Case Rate (estimated)",
-         title = "Active COVID-19 case rate",
+         title = "Active COVID-19 cases per 10,000",
          subtitle = "Georgia statewide",
          tag = "A2")
 ggsave("~/Desktop/ga_viz/ga_genpop_active.png", ga_genpop_active, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/ga_genpop_active.svg", ga_genpop_active, width = 7, height = 5)
-
 
 # B: Statewide prison vs GA state pop - cumulative death rate  ------------------------------
 ga_genpop_compare_deaths <- ga_statewide_df %>% 
@@ -158,7 +159,7 @@ ga_genpop_compare_deaths <- ga_statewide_df %>%
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    geom_vline(xintercept = as.Date("2021-07-12"), size = 1.5, color = "#000000") + 
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") + 
     scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") + 
     scale_y_continuous(labels = scales::percent) +
     labs(y = "COVID-19 Cumulative Death Rate (estimated)",
@@ -168,47 +169,78 @@ ga_genpop_compare_deaths <- ga_statewide_df %>%
 ggsave("~/Desktop/ga_viz/ga_genpop_compare_deaths.png", ga_genpop_compare_deaths, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/ga_genpop_compare_deaths.svg", ga_genpop_compare_deaths, width = 7, height = 5)
 
-# C: Statewide prison vs GA state pop - monthly new death rate  ------------------------------
-ga_genpop_compare_deaths_monthly <- monthly_df %>% 
+# B2: Statewide prison vs GA state pop barchart - cumulative death rate  ------------------------------
+deathrate_compare <- ga_statewide_df %>%
+    ## most recent data for prison is from an earlier date than statewide data available
+    filter(!is.na(res_deathrate)) %>%
+    filter(Date == max(Date)) %>%
+    select(Date,
+        res_deathrate, 
+        gen_deathrate) %>%
+    pivot_longer(!Date) %>%
+    mutate(name = ifelse(name == "res_deathrate", "GDC", "Statewide"))
+
+ga_genpop_compare_deaths_bars <- deathrate_compare %>% 
     ggplot() + 
-    ## blue = state pop
-    geom_line(aes(x = Date, y = gen_monthly_deathrate), size = 1.0, color = "#4C6788") +
-    ## orange = prison 
-    geom_line(
-        aes(x = Date, y = res_monthly_deathrate), size = 1.0, color = "#D7790F"
-    ) + 
+    geom_col(aes(x = name, y = value*10000, color = name, fill = name), size = 1.0) +
+    geom_text(aes(x = name, y = value*10000, label = round(value*10000, 1)), 
+              size = 4, vjust = 1.5) + 
     theme_behindbars() +
+    scale_color_bbdiscrete() +
+    scale_fill_bbdiscrete() +
     theme(
         axis.ticks.y = element_line(color = "#555526"), 
         axis.title.y = element_blank(), 
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    geom_vline(xintercept = as.Date("2021-07-12"), size = 1.5, color = "#000000") +
+    labs(y = "COVID-19 Cumulative Deaths",
+         title = "COVID-19 Cumulative Deaths per 10,000",
+         caption = glue("Data from July 11th, 2021"),
+         tag = "B2") + 
+    theme(legend.position = "none") 
+ggsave("~/Desktop/ga_viz/ga_genpop_compare_deaths_bars.png", ga_genpop_compare_deaths_bars, width = 10, height = 8)
+ggsave("~/Desktop/ga_viz/ga_genpop_compare_deaths_bars.svg", ga_genpop_compare_deaths_bars, width = 7, height = 5)
+
+
+# C: Statewide prison vs GA state pop - monthly new death rate  ------------------------------
+ga_genpop_compare_deaths_monthly <- monthly_df %>% 
+    select(Date, gen_monthly_deathrate, res_monthly_deathrate) %>%
+    pivot_longer(!Date) %>% 
+    ggplot() + 
+    geom_col(aes(x = Date, y = value*10000, fill = name, color = name), size = 1.0, 
+             position = position_dodge()) + 
+    theme_behindbars() +
+    # scale_color_bbdiscrete() +
+    # scale_fill_bbdiscrete() +
+    scale_colour_manual(values = c("#4C6788", "#D7790F")) + 
+    scale_fill_manual(values = c("#4C6788", "#D7790F")) + 
+    theme(
+        axis.ticks.y = element_line(color = "#555526"), 
+        axis.title.y = element_blank(), 
+        axis.line.y = element_line(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank()) + 
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") +
     geom_vline(xintercept = as.Date("2021-03-14"), size = 1.5, color = "#000000") +
-    scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") + 
-    scale_y_continuous(labels = scales::percent) +
-    labs(y = "COVID-19 Monthly Death Rate (estimated)",
-         title = "COVID-19 monthly death rate",
+    scale_x_date(date_breaks = "2 month", date_labels =  "%b") + 
+    labs(y = "COVID-19 Monthly Deaths per 10,000",
+         title = "COVID-19 New Monthly Deaths per 10,000",
          subtitle = "GA statewide (blue) and state prison population (orange)",
-         tag = "C")
+         tag = "C2") + 
+    theme(legend.position = "none") 
 ggsave("~/Desktop/ga_viz/ga_genpop_compare_monthly_deaths.png", ga_genpop_compare_deaths_monthly, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/ga_genpop_compare_monthly_deaths.svg", ga_genpop_compare_deaths_monthly, width = 7, height = 5)
 
 # D: Statewide prison - CFR  ------------------------------
 ga_cfr <- ga_statewide_df %>% 
     ggplot() + 
-    ## blue = state pop
-    geom_line(aes(x = Date, y = gen_cfr), size = 1.0, color = "#4C6788") +
-    ## orange = prison 
+    geom_line(aes(x = Date, y = gen_cfr_7day), size = 1.0, color = "#4C6788") +
     geom_line(
-        data = ga_statewide %>% filter(!is.na(res_cfr)),
-        aes(x = Date, y = res_cfr), size = 1.0, color = "#D7790F"
+        data = ga_statewide_df %>% 
+            filter(!is.na(res_cfr_7day) & Date < as.Date("2021-03-15")),
+        aes(x = Date, y = res_cfr_7day), size = 1.0, color = "#D7790F"
     ) +
-    # geom_line(
-    #     data = ga_statewide %>% filter(!is.na(res_active_dfr)),
-    #     aes(x = Date, y = res_active_dfr), size = 1.0, color = "red"
-    # ) +     
     theme_behindbars() + 
     theme(
         axis.ticks.y = element_line(color = "#555526"), 
@@ -216,15 +248,16 @@ ga_cfr <- ga_statewide_df %>%
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    ## NO NEW COVID DEATHS REPORTED AFTER THIS POINT -- sus
-    geom_vline(xintercept = as.Date("2021-07-12"), size = 1.5, color = "#000000") +
     ## date dashboard was taken down 
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") +
+    ## NO NEW COVID DEATHS REPORTED AFTER THIS POINT -- sus
     geom_vline(xintercept = as.Date("2021-03-14"), size = 1.5, color = "#000000") +
-    scale_x_date(date_breaks = "1 month", date_labels =  "%b %y") + 
-    scale_y_continuous(labels = scales::percent) + 
+    scale_x_date(date_breaks = "2 months", date_labels =  "%b") + 
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1L)) + 
     labs(y = "COVID-19 Case Fatality Rate",
-         title = "COVID-19 case fatality rate",
+         title = "COVID-19 Case Fatality Rate",
          subtitle = "GA statewide (blue) and state prison population (orange)",
+         caption = "Calculated weekly average",
          tag = "D")
 ggsave("~/Desktop/ga_viz/ga_cfr.png", ga_cfr, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/ga_cfr.svg", ga_cfr, width = 7, height = 5)
@@ -262,9 +295,10 @@ later_outbreaks <- ga_state %>%
 facs_to_highlight <- c(top_dfr, later_outbreaks)
 
 facility_active_caserate <- ga_state %>%
-    filter(Name %in% facs_to_highlight,
+    filter(Name %in% top_dfr,
            Name != "EFFINGHAM COUNTY CORRECTIONAL INSTITUTION",
            Name != "CARROLL COUNTY CORRECTIONAL INSTITUTION") %>%
+    # mutate(Name == str_replace(Name, "CORRECTIONAL INSTITUTION", "CI")) %>%
     ggplot(aes(
         x = Date, y = res_active_dfr, color = Name, fill = Name)) +
     geom_line(size = 1.5) +
@@ -281,13 +315,13 @@ facility_active_caserate <- ga_state %>%
     ## NO NEW COVID DEATHS REPORTED AFTER THIS POINT -- sus
     geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") +
     scale_x_date(date_breaks = "2 months", date_labels =  "%b %y") + 
-    scale_y_continuous(labels = scales::percent) + 
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1L)) + 
     labs(y = "Estimated COVID-19 Active Case Rate",
          title = "Facility Outbreaks in Georgia State Prisons",
          subtitle = "Estimated COVID-19 Active Case Rate",
          tag = "E") + 
-    theme(legend.position = "bottom")
-ggsave("~/Desktop/ga_viz/facility_active_caserate.png", facility_active_caserate, width = 10, height = 8)
+    theme(legend.position = "right")
+ggsave("~/Desktop/ga_viz/facility_active_caserate.png", facility_active_caserate, width = 18, height = 8)
 ggsave("~/Desktop/ga_viz/facility_active_caserate.svg", facility_active_caserate, width = 7, height = 5)
 
 # Deaths analysis ---------------------------------------------------------
@@ -390,7 +424,7 @@ ga_genpop_compare_deaths_daily <- ga_statewide_df %>%
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    geom_vline(xintercept = as.Date("2021-07-12"), size = 1.5, color = "#000000") + 
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") + 
     scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") + 
     scale_y_continuous(labels = scales::percent) +
     labs(y = "COVID-19 Daily Death Rate (estimated)",
@@ -414,7 +448,7 @@ ga_genpop_compare_deaths_monthly <- monthly_df %>%
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank()) + 
-    geom_vline(xintercept = as.Date("2021-07-12"), size = 1.5, color = "#000000") +
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") +
     scale_x_date(date_breaks = "2 month", date_labels =  "%b %y") + 
     scale_y_continuous(labels = scales::percent) +
     labs(y = "COVID-19 Monthly Case Rate (estimated)",
