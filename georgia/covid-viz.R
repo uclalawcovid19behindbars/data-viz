@@ -12,7 +12,8 @@ ga_state <- raw_dat %>%
     mutate(res_deaths_lag = dplyr::lag(Residents.Deaths, order_by = Date),
            res_active_df = diff_roll_sum(Residents.Confirmed, Date)) %>%
     ungroup() %>%
-    mutate(res_active_dfr = res_active_df / Residents.Population,
+    mutate(res_cfr_alt = Residents.Deaths / Residents.Confirmed,
+           res_active_dfr = res_active_df / Residents.Population,
            res_new_deaths = Residents.Deaths - res_deaths_lag,
            res_cfr =  res_new_deaths / res_active_df,
            ## on days when the death count dropped, make NA
@@ -42,7 +43,9 @@ ga_statewide <- historical_statewide %>%
            res_cfr = ifelse(is.infinite(res_cfr), NA, res_cfr),
            res_deathrate = Residents.Deaths / ga_prison_pop,
            res_newdeath_rate = res_new_deaths / ga_prison_pop,
-           res_cfr_7day = zoo::rollmean(res_cfr, k = 7, fill = NA)
+           res_cfr_7day = zoo::rollmean(res_cfr, k = 7, fill = NA),
+           res_cfr_alt = Residents.Deaths / Residents.Confirmed,
+           res_cfr_alt_7day = zoo::rollmean(res_cfr_alt, k = 7, fill = NA),
            # staff_cfr = diff_roll_sum(Staff.Confirmed, Date) / diff_roll_sum(Staff.Deaths, Date),
            # staff_cfr = ifelse(is.infinite(staff_cfr), NA, staff_cfr)
            ) %>%
@@ -66,14 +69,18 @@ ga_general <- ga_general %>%
             gen_cfr = ifelse(is.infinite(gen_cfr), NA, gen_cfr),
             gen_cfr = ifelse(is.nan(gen_cfr), NA, gen_cfr),
             gen_deathrate = General.Deaths / General.Population,
-            gen_cfr_7day = zoo::rollmean(gen_cfr, k = 7, fill = NA)) 
+            gen_cfr_7day = zoo::rollmean(gen_cfr, k = 7, fill = NA),
+            gen_cfr_alt = General.Deaths / General.Confirmed,
+            gen_cfr_alt_7day = zoo::rollmean(gen_cfr_alt, k = 7, fill = NA),
+            ) 
 #write_csv(ga_general, "~/Desktop/ga_general.csv")
 
 ga_statewide_df <- ga_general %>%
     left_join(ga_statewide, by = "Date") %>%
     mutate(week = lubridate::week(Date),
            year = lubridate::year(Date),
-           month = lubridate::month(Date)) 
+           month = lubridate::month(Date),
+           diff_cfr = res_cfr_alt - gen_cfr_alt)
 write_csv(ga_statewide_df, "~/Desktop/ga_statewide_df.csv")
 
 ## create monthly aggregate counts -- new cases, new deaths
@@ -261,6 +268,67 @@ ga_cfr <- ga_statewide_df %>%
          tag = "D")
 ggsave("~/Desktop/ga_viz/ga_cfr.png", ga_cfr, width = 10, height = 8)
 ggsave("~/Desktop/ga_viz/ga_cfr.svg", ga_cfr, width = 7, height = 5)
+
+# D2: Statewide prison - CFR alt (cumulative deaths, cumulative cases) ------------------------------
+ga_cfr <- ga_statewide_df %>% 
+    filter(Date > as.Date("2020-03-22")) %>%
+    ggplot() + 
+    geom_line(aes(x = Date, y = gen_cfr_alt_7day), size = 1.0, color = "#4C6788") +
+    geom_line(
+        data = ga_statewide_df %>% 
+            filter(!is.na(res_cfr_alt_7day) & Date < as.Date("2021-03-15")),
+        aes(x = Date, y = res_cfr_alt_7day), size = 1.0, color = "#D7790F"
+    ) +
+    theme_behindbars() + 
+    theme(
+        axis.ticks.y = element_line(color = "#555526"), 
+        axis.title.y = element_blank(), 
+        axis.line.y = element_line(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank()) + 
+    ## date dashboard was taken down 
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") +
+    ## NO NEW COVID DEATHS REPORTED AFTER THIS POINT -- sus
+    geom_vline(xintercept = as.Date("2021-03-14"), size = 1.5, color = "#000000") +
+    scale_x_date(date_breaks = "2 months", date_labels =  "%b") + 
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1L)) + 
+    labs(y = "COVID-19 Case Fatality Rate",
+         title = "COVID-19 Case Fatality Rate",
+         subtitle = "GA statewide (blue) and state prison population (orange)",
+         caption = "Calculated weekly average",
+         tag = "D2")
+ggsave("~/Desktop/ga_viz/ga_cfr_cumulative.png", ga_cfr, width = 10, height = 8)
+ggsave("~/Desktop/ga_viz/ga_cfr_cumulative.svg", ga_cfr, width = 7, height = 5)
+
+ga_cfr <- ga_statewide_df %>% 
+    ggplot() + 
+    geom_line(aes(x = Date, y = gen_cfr_alt), size = 1.0, color = "#4C6788") +
+    geom_line(
+        data = ga_statewide_df %>% 
+            filter(!is.na(res_cfr_alt) & Date < as.Date("2021-03-15")),
+        aes(x = Date, y = res_cfr_alt), size = 1.0, color = "#D7790F"
+    ) +
+    theme_behindbars() + 
+    theme(
+        axis.ticks.y = element_line(color = "#555526"), 
+        axis.title.y = element_blank(), 
+        axis.line.y = element_line(), 
+        panel.grid.major.y = element_blank(), 
+        panel.grid.major.x = element_blank()) + 
+    ## date dashboard was taken down 
+    geom_vline(xintercept = as.Date("2021-07-16"), size = 1.5, color = "#000000") +
+    ## NO NEW COVID DEATHS REPORTED AFTER THIS POINT -- sus
+    geom_vline(xintercept = as.Date("2021-03-14"), size = 1.5, color = "#000000") +
+    scale_x_date(date_breaks = "2 months", date_labels =  "%b") + 
+    scale_y_continuous(labels = scales::percent_format(accuracy = 1L)) + 
+    labs(y = "COVID-19 Case Fatality Rate",
+         title = "COVID-19 Case Fatality Rate",
+         subtitle = "GA statewide (blue) and state prison population (orange)",
+         caption = "Calculated weekly average",
+         tag = "D2")
+ggsave("~/Desktop/ga_viz/ga_cfr_cumulative.png", ga_cfr, width = 10, height = 8)
+ggsave("~/Desktop/ga_viz/ga_cfr_cumulative.svg", ga_cfr, width = 7, height = 5)
+
 
 # Case Fatality Rate analysis ---------------------------------------------
 
