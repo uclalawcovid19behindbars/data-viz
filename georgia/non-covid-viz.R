@@ -8,7 +8,7 @@ library(glue)
 sw_deaths <- tibble(
     Year = c(2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021),
     Suicides = c(5, 7, 8, 19, 17, 16, 24, 14),
-    Homicides = c(5, 2, 5, 8, 9, 8, 29, 18),
+    Homicides = c(5, 2, 5, 8, 9, 8, 29, 19),
     ) %>%
     pivot_longer(!Year, names_to = "variable", values_to = "count") %>%
     group_by(Year) %>%
