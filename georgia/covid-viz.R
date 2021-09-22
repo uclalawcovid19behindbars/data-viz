@@ -28,9 +28,10 @@ latest_ga$Residents.Initiated / latest_ga$Residents.Population
 
 ## read statewide prison data and create metrics for analysis 
 historical_statewide <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/historical-data/historical_state_counts.csv")
-ga_prison_pop <- behindbarstools::read_mpap_pop_data() %>%
-    filter(State == "Georgia") %>%
-    pull(Population.Feb20)
+
+# http://104.131.72.50:3838/scraper_data/raw_files/2020-03-01_historical_ga_pop.pdf
+ga_prison_pop <- 55221
+
 ga_statewide <- historical_statewide %>%
     filter(State == "Georgia") %>%
     ## NB: denominator is feb 2020 prison population!
@@ -43,6 +44,7 @@ ga_statewide <- historical_statewide %>%
            res_cfr = ifelse(is.infinite(res_cfr), NA, res_cfr),
            res_deathrate = Residents.Deaths / ga_prison_pop,
            res_newdeath_rate = res_new_deaths / ga_prison_pop,
+           # k refers to time periods (which are weeks here), not days 
            res_cfr_7day = zoo::rollmean(res_cfr, k = 7, fill = NA),
            res_cfr_alt = Residents.Deaths / Residents.Confirmed,
            res_cfr_alt_7day = zoo::rollmean(res_cfr_alt, k = 7, fill = NA),
