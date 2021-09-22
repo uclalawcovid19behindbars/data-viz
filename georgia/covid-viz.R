@@ -7,7 +7,7 @@ library(zoo)
 raw_dat <- behindbarstools::read_scrape_data(all_dates = TRUE, state = "Georgia")
 ga_state <- raw_dat %>%
     filter(Jurisdiction == "state",
-           Age != "Juvenile") %>%
+           !Age %in% c("Juvenile")) %>%
     group_by(Facility.ID) %>%
     mutate(res_deaths_lag = dplyr::lag(Residents.Deaths, order_by = Date),
            res_active_df = diff_roll_sum(Residents.Confirmed, Date)) %>%
@@ -28,9 +28,8 @@ latest_ga$Residents.Initiated / latest_ga$Residents.Population
 
 ## read statewide prison data and create metrics for analysis 
 historical_statewide <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/historical-data/historical_state_counts.csv")
-ga_prison_pop <- behindbarstools::read_mpap_pop_data() %>%
-    filter(State == "Georgia") %>%
-    pull(Population.Feb20)
+# http://104.131.72.50:3838/scraper_data/raw_files/2020-03-01_historical_ga_pop.pdf
+ga_prison_pop <- 55221
 ga_statewide <- historical_statewide %>%
     filter(State == "Georgia") %>%
     ## NB: denominator is feb 2020 prison population!
