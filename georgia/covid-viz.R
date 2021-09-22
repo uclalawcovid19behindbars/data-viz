@@ -7,7 +7,7 @@ library(zoo)
 raw_dat <- behindbarstools::read_scrape_data(all_dates = TRUE, state = "Georgia")
 ga_state <- raw_dat %>%
     filter(Jurisdiction == "state",
-           Age != "Juvenile") %>%
+           !Age %in% c("Juvenile")) %>%
     group_by(Facility.ID) %>%
     mutate(res_deaths_lag = dplyr::lag(Residents.Deaths, order_by = Date),
            res_active_df = diff_roll_sum(Residents.Confirmed, Date)) %>%
