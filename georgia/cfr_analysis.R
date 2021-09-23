@@ -1,15 +1,29 @@
 library(tidyverse)
 library(skimr)
+library(glue)
 
 statewide <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/latest-data/latest_state_counts.csv")
 
 sw <- statewide %>%
     mutate(cfr_cumulative = Residents.Deaths / Residents.Confirmed,
-           cfr_label = glue("{round(cfr_cumulative, 3)*100}%") )
+           cfr_label = glue("{round(cfr_cumulative, 3)*100}%"),
+           test_rate = Residents.Tadmin / Residents.Population)
+
+ntl_prison_avg <- mean(sw$cfr_cumulative, na.rm = TRUE)
+
+us_general <- behindbarstools::get_genstate_covid() %>%
+    group_by(State) %>%
+    filter(Date == max(Date)) %>%
+    ungroup() %>%
+    mutate(cfr_cumulative = General.Deaths / General.Confirmed)
+ntl_us_avg <- mean(us_general$cfr_cumulative, na.rm = TRUE)
 
 p <- sw %>% 
     arrange(-cfr_cumulative) %>% 
     filter(cfr_cumulative > .0118) %>% 
+    add_row(State = "National Prison Average", 
+            cfr_cumulative = ntl_prison_avg,
+            cfr_label = glue("{round(ntl_prison_avg, 3)*100}%")) %>%
     mutate(State_ = forcats::fct_reorder(State, cfr_cumulative)) %>% 
     ggplot(aes(x = State_, y = cfr_cumulative, xend = State_, yend = 0, 
            label = cfr_label)) +
