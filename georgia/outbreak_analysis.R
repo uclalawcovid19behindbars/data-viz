@@ -14,3 +14,6 @@ ga_state <- raw_dat %>%
            staff_active_df = diff_roll_sum(Staff.Confirmed, Date))  %>%
     ungroup()
 write_csv(ga_state, "georgia/data/ga_historical_facs.csv")
+
+## analysis done in python, here: 
+## https://colab.research.google.com/drive/1EiBxVJ5xEomMOE5To8vU74ujdMc4F-oM#scrollTo=GE0hRuju5eL- 

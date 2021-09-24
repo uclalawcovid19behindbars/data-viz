@@ -7,7 +7,8 @@ statewide <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbar
 sw <- statewide %>%
     mutate(cfr_cumulative = Residents.Deaths / Residents.Confirmed,
            cfr_label = glue("{round(cfr_cumulative, 3)*100}%"),
-           test_rate = Residents.Tadmin / Residents.Population)
+           test_rate = Residents.Tadmin / Residents.Population,
+           death_rate = Residents.Deaths / Residents.Population)
 
 ntl_prison_avg <- mean(sw$cfr_cumulative, na.rm = TRUE)
 
