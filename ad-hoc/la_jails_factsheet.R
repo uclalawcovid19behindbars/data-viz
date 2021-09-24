@@ -48,7 +48,6 @@ ggsave("laj_pop.svg", laj_pop, width = 10, height = 8)
 
 ## plot of staff over time
 laj_staff <- laj %>% 
-    mutate(staff_active_dfr = diff_roll_sum(Staff.Confirmed)) %>%
     ggplot() + 
     geom_line(aes(x = Date, y = staff_active_dfr), size = 1.0, color = "#D7790F") + 
     theme_behindbars() + 
