@@ -15,7 +15,9 @@ nyt_df <- read.csv(NYT_PATH)
 
 # Clean data, create rates and bins 
 plot_df <- state_df %>% 
-    left_join(nyt_df, by = c("State" = "system")) %>% 
+    left_join(nyt_df %>% 
+                  mutate(inmate_tests = ifelse(inmate_tests == 0, NA, inmate_tests)),
+              by = c("State" = "system")) %>% 
     mutate(Residents.Population = case_when(
         State == "Minnesota" ~ 7078, 
         TRUE ~ as.double(Residents.Population))) %>% 
@@ -35,23 +37,23 @@ plot_df <- state_df %>%
            TP.Rate = Confirmed_nyt / Tadmin_nyt) %>% 
     mutate(Testing.Bin = case_when(
         is.na(Testing.Rate) ~ "No data", 
-        Testing.Rate <= 1 ~ "<1", 
+        Testing.Rate <= 1 ~ "Fewer than 1", 
         Testing.Rate > 1 & Testing.Rate <= 2 ~ "1 to 2", 
         Testing.Rate > 2 & Testing.Rate <= 3 ~ "2 to 3", 
-        Testing.Rate > 3 ~ "3+")) %>% 
+        Testing.Rate > 3 ~ "More than 3")) %>% 
     mutate(CF.Bin = case_when(
         is.na(CF.Rate) ~ "No data", 
-        CF.Rate < 0.01 ~ "<1%", 
+        CF.Rate < 0.01 ~ "Below 1%", 
         CF.Rate > 0.01 & CF.Rate < 0.02 ~ "1 to 2%", 
         CF.Rate > 0.02 & CF.Rate < 0.03 ~ "2 to 3%", 
-        CF.Rate > 0.03 ~ "3%+")) %>% 
+        CF.Rate > 0.03 ~ "Above 3%")) %>% 
     mutate(TP.Bin = case_when(
         is.na(TP.Rate) ~ "No data", 
-        TP.Rate < 0.05 ~ "<5%", 
+        TP.Rate < 0.05 ~ "Below 5%", 
         TP.Rate > 0.05 & TP.Rate < 0.1 ~ "5 to 10%", 
         TP.Rate > 0.10 & TP.Rate < 0.2 ~ "10 to 20%", 
-        # TP.Rate > 0.20 & TP.Rate < 0.3 ~ "20 to 30%", 
-        TP.Rate > 0.2 ~ "20+%"
+        TP.Rate > 0.20 & TP.Rate < 0.3 ~ "20 to 30%",
+        TP.Rate > 0.3 ~ "Above 30%"
     ))
 
 # Hex map skeleton 
@@ -70,29 +72,30 @@ joined_df <- spdf_fortified %>%
     left_join(plot_df, by = c("id" = "State")) 
 
 fill_testing <- c(
-    "<1" = "#d94701", 
+    "Fewer than 1" = "#d94701", 
     "1 to 2" = "#fd8d3c", 
     "2 to 3" = "#fdbe85", 
-    "3+" = "#feedde", 
+    "More than 3" = "#feedde", 
     "No data" = "#d9d9d9")
 
 fill_CF <- c(
-    "<1%" = "#d94701", 
-    "1 to 2%" = "#fd8d3c", 
-    "2 to 3%" = "#fdbe85", 
-    "3%+" = "#feedde", 
+    "Below 1%" = "#feedde", 
+    "1 to 2%" = "#fdbe85", 
+    "2 to 3%" = "#fd8d3c", 
+    "Above 3%" = "#d94701", 
     "No data" = "#d9d9d9")
 
 fill_TP <- c(
-    "<5%" = "#d94701", 
-    "5 to 10%" = "#fd8d3c", 
-    "10 to 20%" = "#fdbe85", 
-    "20%+" = "#feedde", 
+    "Below 5%" = "#feedde", 
+    "5 to 10%" = "#fdbe85", 
+    "10 to 20%" = "#fd8d3c", 
+    "20 to 30%" = "#e6550d", 
+    "Above 30%" = "#a63603", 
     "No data" = "#d9d9d9")
 
-breaks_testing <- c("<1", "1 to 2", "2 to 3", "3+", "No data")
-breaks_CF <- c("<1%", "1 to 2%", "2 to 3%", "3%+", "No data")
-breaks_TP <- c("<5%", "5 to 10%", "10 to 20%", "20%+", "No data")
+breaks_testing <- c("Fewer than 1", "1 to 2", "2 to 3", "More than 3", "No data")
+breaks_CF <- c("Below 1%", "1 to 2%", "2 to 3%", "Above 3%", "No data")
+breaks_TP <- c("Below 5%", "5 to 10%", "10 to 20%", "20 to 30%", "Above 30%", "No data")
 
 hex_theme <- theme(
     plot.title =          element_text(hjust = 0.5), 
@@ -132,13 +135,22 @@ plot_hex_map <- function(df, fill_var, values, breaks, labels){
             breaks = breaks, 
             labels = labels) + 
         coord_map() + 
+        guides(fill = guide_legend(nrow = 1, byrow = TRUE)) + 
         theme_behindbars(base_size = 14, base_color = "black") +
         hex_theme
 }
 
 plot_hex_map(joined_df, "Testing.Bin", fill_testing, breaks_testing, breaks_testing) + 
-    labs(title = "Several states rarely tested incarcerated people for COVID", 
+    labs(title = "Several states have rarely tested incarcerated people for COVID", 
         subtitle = "Number of COVID tests reported per person incarcerated in state prisons")
+
+plot_hex_map(joined_df, "CF.Bin", fill_CF, breaks_CF, breaks_CF) + 
+    labs(title = "Alabama state prisons have reported a case fatality rate above 3%", 
+         subtitle = "Case fatality rates among incarcerated people in state prisons")
+
+plot_hex_map(joined_df, "TP.Bin", fill_TP, breaks_TP, breaks_TP) + 
+    labs(title = "Several prison systems have reported alarmingly high positivity rates", 
+         subtitle = "Test positivity rates among incarcerated people in state prisons")
 
 # CFR lollipop plot 
 plot_lollipop <- function(df, plot_var, filter_min) {
@@ -155,15 +167,45 @@ plot_lollipop <- function(df, plot_var, filter_min) {
     geom_text(aes(
         label = percent(!!sym(plot_var), accuracy = 0.1)), 
         hjust = -0.4, color = "#565629", size = 4) + 
-    coord_flip() + 
-    scale_y_continuous(
-        labels = percent_format(accuracy = 1.0), 
-        limits = c(0, 0.041), 
-        expand = c(0, 0)) + 
+    coord_flip()  + 
     theme_classic(base_family = "Helvetica", base_size = 14)  + 
     barplot_theme 
 }
 
-plot_lollipop(df, "CF.Rate", 0.01) + 
+ggplot(
+    data = plot_df %>% 
+        filter(Testing.Rate < 2.0) %>% 
+        arrange(-Testing.Rate) %>% 
+        mutate(State = factor(State, levels = State)) %>% 
+        filter(!State %in% c("ICE", "Federal", "District of Columbia")) %>% 
+        filter(!is.na(Testing.Rate)),  
+    aes(x = State, y = Testing.Rate)) + 
+    geom_segment(aes(xend = State, yend = 0), size = 0.8, color = "#b6b6a1") +
+    geom_point(color = "#565629", size = 2.9) +
+    geom_text(aes(
+        label = comma(Testing.Rate, accuracy = 0.1)), 
+        hjust = -0.4, color = "#565629", size = 4) + 
+    coord_flip()  + 
+    theme_classic(base_family = "Helvetica", base_size = 14) + 
+    barplot_theme + 
+    scale_y_continuous(
+        limits = c(0, 2.1),
+        expand = c(0, 0)) +
+    labs(title = "11 state prison systems have tested incarcerated people fewer than 2 times on average", 
+         subtitle = "Number of COVID tests reported per person incarcerated in state prisons")
+
+plot_lollipop(plot_df, "CF.Rate", 0.01) + 
+    scale_y_continuous(
+        labels = percent_format(accuracy = 1.0), 
+        limits = c(0, 0.041), 
+        expand = c(0, 0)) + 
     labs(title = "12 state prison systems have case fatality rates above 1%", 
-         subtitle = "COVID case fatality rates across state prisons")
+         subtitle = "Case fatality rates among incarcerated people in state prisons")
+
+plot_lollipop(plot_df, "TP.Rate", 0.15) + 
+    scale_y_continuous(
+        labels = percent_format(accuracy = 1.0), 
+        limits = c(0, 0.51),
+        expand = c(0, 0)) + 
+    labs(title = "10 state prison systems have reported test positivity rates above 15%", 
+         subtitle = "Test positivity rates among incarcerated people in state prisons")
