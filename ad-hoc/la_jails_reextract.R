@@ -137,6 +137,7 @@ for (name in cumulative_cols){
            height = 10, width = 15)
 }
 
+### Step 5: Save data
 final_data <- data_towrite %>%
     select(-starts_with("flag_")) %>%
     relocate(Date, any_flag, n_flags, starts_with("Residents.")) %>%
