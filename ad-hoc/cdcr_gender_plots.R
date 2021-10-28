@@ -196,8 +196,10 @@ female <- latest_ %>%
            Name, Residents.Confirmed, Jurisdiction, State) %>% 
     filter(Residents.Confirmed >= 100)
 
+cross_asset <- "https://raw.githubusercontent.com/uclalawcovid19behindbars/data-viz/master/data-templates/cross.png"
+
 female_transformed <- usmap::usmap_transform(female) %>% 
-    mutate(image = sample(c("data-templates/cross.png"))) 
+    mutate(image = sample(c(cross_asset))) 
 
 state <- female_transformed %>% 
     filter(Jurisdiction == "state")
