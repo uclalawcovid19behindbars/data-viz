@@ -5,7 +5,7 @@ library(behindbarstools)
 library(ggmap)
 library(maps)
 library(mapdata)
-library(usmap)
+library(ggimage)
 
 # ------------------------------------------------------------------------------
 
@@ -90,6 +90,7 @@ latest %>%
     filter(Jurisdiction == "state") %>% 
     filter(State == "California") %>% 
     filter(!is.na(Residents.Confirmed)) %>% 
+    filter(Residents.Population > 20) %>% 
     mutate(Gender = ifelse(Gender == "Female", "Female", "Mixed")) %>% 
     arrange(desc(Gender)) %>% 
     ggplot(aes(x = Residents.Population, y = Residents.Confirmed)) +
@@ -101,8 +102,8 @@ latest %>%
     geom_point(aes(color = Gender, fill = Gender), 
                shape = 21, size = 5, color = "white") +
     theme_behindbars(base_color = "black", base_size = 18) + 
-    scale_x_continuous(label = scales::comma, limits = c(0, 5000)) + 
-    scale_y_continuous(label = scales::comma, limits = c(0, 4000)) + 
+    scale_x_continuous(label = scales::comma, limits = c(0, 5200), expand = c(0, 0)) +
+    scale_y_continuous(label = scales::comma, limits = c(0, 4000), expand = c(0, 0)) +
     scale_fill_bbdiscrete_alt() +     
     labs(x = "Current Incarcerated Population",
          y = "Cumulative COVID-19 Cases") +
@@ -112,7 +113,7 @@ latest %>%
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank(), 
         axis.title.x = element_text(margin = margin(t = 1.2 * 18)), 
-        legend.position = "none")
+        legend.position = "none") 
 
 ggsave("cdcr_case_rates.svg", width = 11, height = 9)
 
@@ -124,18 +125,20 @@ all_dates %>%
     ggplot() + 
     geom_line(aes(x = Date, y = Residents.Population), size = 1.0, color = "#4C6788") + 
     geom_line(aes(x = Date, y = Residents.Confirmed), size = 1.0, color = "#D7790F") + 
-    geom_hline(yintercept = 1298, linetype = "dashed", size = 1.0, color = "#84816F") +
+    geom_hline(yintercept = 1281, linetype = "dashed", size = 1.0, color = "#84816F") +
     scale_y_continuous(label = scales::comma, limits = c(0, 2000)) + 
+    scale_x_date(breaks = scales::pretty_breaks(n = 7), date_labels =  "%b '%y") + 
     labs(title = "California Institution for Women") + 
     theme_behindbars() + 
     theme(
+        axis.title.x = element_blank(),
         axis.ticks.y = element_line(color = "#555526"), 
         axis.title.y = element_blank(), 
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank())
 
-ggsave("ciw.svg", ccwf, width = 10, height = 8)
+ggsave("ciw.svg", width = 9, height = 6)
 
 all_dates %>% 
     filter(Name == "CENTRAL CALIFORNIA WOMENS FACILITY") %>% 
@@ -143,23 +146,25 @@ all_dates %>%
     ggplot() + 
     geom_line(aes(x = Date, y = Residents.Population), size = 1.0, color = "#4C6788") + 
     geom_line(aes(x = Date, y = Residents.Confirmed), size = 1.0, color = "#D7790F") + 
-    geom_hline(yintercept = 1298, linetype = "dashed", size = 1.0, color = "#84816F") +
+    geom_hline(yintercept = 1990, linetype = "dashed", size = 1.0, color = "#84816F") +
     scale_y_continuous(label = scales::comma, limits = c(0, 3000)) +
+    scale_x_date(breaks = scales::pretty_breaks(n = 7), date_labels =  "%b '%y") + 
     labs(title = "Central California Women's Facility") + 
     theme_behindbars() + 
     theme(
+        axis.title.x = element_blank(),
         axis.ticks.y = element_line(color = "#555526"), 
         axis.title.y = element_blank(), 
         axis.line.y = element_line(), 
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank())
 
-ggsave("ccwf.svg", ccwf, width = 10, height = 8)
+ggsave("ccwf.svg", width = 9, height = 6)
 
 # ------------------------------------------------------------------------------
 
 # Active cases 
-all_dates %>% 
+p <- all_dates %>% 
     filter(Name %in% c(
         "CENTRAL CALIFORNIA WOMENS FACILITY", 
         "CALIFORNIA INSTITUTION FOR WOMEN")) %>% 
@@ -181,11 +186,9 @@ all_dates %>%
         panel.grid.major.y = element_blank(), 
         panel.grid.major.x = element_blank())
 
-ggsave("active.svg", active, width = 11, height = 9)
+ggsave("active.svg", width = 10, height = 6)
 
 # ------------------------------------------------------------------------------
-
-# scrape <- read_scrape_data(window = 400)
 
 female <- latest_ %>% 
     filter(Gender == "Female") %>% 
