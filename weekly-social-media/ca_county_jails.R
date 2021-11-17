@@ -23,9 +23,9 @@ out <- all_ca %>%
     scale_x_date(limits = c(as.Date("2021-08-01"), as.Date("2021-11-05"))) +
     theme_behindbars(base_size = 18, base_color = "black") + 
     labs(y = "Active COVID-19 cases") + 
-    scale_color_bbdiscrete() #+ 
-    # theme(legend.position = "none", 
-    #       legend.title = element_blank())
+    scale_color_bbdiscrete() + 
+    theme(legend.position = "none",
+          legend.title = element_blank())
 
 ggsave("ca_jails_active.svg", out, width = 5, height = 5)
 ggsave("ca_jails_active.png", out, width = 7, height = 5)
