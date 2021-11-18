@@ -28,6 +28,6 @@ out <- all_ca %>%
           legend.title = element_blank())
 
 ggsave("ca_jails_active.svg", out, width = 5, height = 5)
-ggsave("ca_jails_active.svg", out, width = 8, height = 5)
+ggsave("ca_jails_active_wide.svg", out, width = 8, height = 5)
 
 ggsave("ca_jails_active.png", out, width = 7, height = 5)
