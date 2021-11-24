@@ -8,7 +8,7 @@ gen_il_df <- get_genpop_covid(17031)
 # get carceral data for the state of Illinois
 all_df <- read_scrape_data(TRUE, state = "Illinois")
 
-all_df %>%
+cook_plot <- all_df %>%
     # only look at cook county jail
     filter(Facility.ID == 454) %>%
     # trim the data down
@@ -27,7 +27,7 @@ all_df %>%
     arrange(Group, Date) %>%
     na.omit() %>%
     # only look at recent dates
-    filter(Date >= ymd("2021-10-01")) %>%
+    filter(Date >= ymd("2021-10-29")) %>%
     # calculate rate
     mutate(Rate = Active/Pop * 100000) %>%
     # make a purty plot
@@ -36,3 +36,6 @@ all_df %>%
     theme_behindbars() +
     scale_color_bbdiscrete() +
     labs(color = "", y = "Active Cases\nPer 100,000")
+
+ggsave("~/Downloads/cook_plot.png", cook_plot, width = 10, height = 6)
+ggsave("~/Downloads/cook_plot.svg", cook_plot, width = 10, height = 6)
