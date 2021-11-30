@@ -37,6 +37,31 @@ state_df <- calc_aggregate_counts(all_dates = TRUE, state = TRUE)
     scale_color_bbdiscrete() +
     ylab("COVID Deaths Per 1000 Cases")
 
+"https://raw.githubusercontent.com/uclalawcovid19behindbars/data/" %>%
+    str_c("master/latest-data/state_aggregate_counts.csv") %>%
+    read_csv(col_types = cols()) %>%
+    mutate(CFR = Residents.Deaths / Residents.Confirmed*1000) %>%
+    select(State, CFR) %>%
+    filter(!is.na(CFR) & State != "ICE") %>%
+    mutate(State = fct_reorder(State, CFR)) %>%
+    mutate(IsAL = TRUE) %>%
+    ggplot(aes(x = State, y = CFR, xend = State, yend = 0, color=IsAL)) + 
+    geom_point(size=3) +
+    geom_segment(size = 1.5) +
+    coord_flip() +
+    theme_behindbars() +
+    theme(
+        panel.grid.major.y = element_blank(),
+        axis.text.y = element_text(color = "#555526", size = 13),
+        axis.text.x = element_text(color = "#555526", size = 18),
+        panel.grid.major.x = element_line(
+            color = "#92926C", linetype = "dotted"),
+        axis.title.x = element_text(margin = margin(r = 20)),
+        axis.title.y = element_blank(),
+        legend.position = "none") +
+    scale_color_bbdiscrete() +
+    ylab("COVID Deaths Per 1000 Cases")
+
 al_fac_df <- read_scrape_data(all_dates = TRUE, state = "Alabama")
 
 al_pop_df <- al_fac_df %>%
