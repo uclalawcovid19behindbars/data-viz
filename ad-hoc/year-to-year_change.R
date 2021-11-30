@@ -19,25 +19,9 @@ agg_week_out <- agg_week %>%
     mutate(rollavg_measure = zoo::rollmean(Val, k = 3, fill = NA)) %>%
     ungroup()
 
-## CREATE PLOTTING FUNCTION
-create_lag_bars <- function(df, metric, bar_color = "#D7790F"){
-    agg_month %>% 
-        filter(Measure == metric) %>% 
-        group_by(Date) %>% 
-        summarise(cases = sum_na_rm(MP)) %>%
-        mutate(lag = cases - lag(cases)) %>%
-        mutate(lag = ifelse(lag < 0, 0, lag)) %>%
-        ggplot() + 
-        geom_bar(aes(x = Date, y = lag), fill = bar_color, stat = "identity") + 
-        theme_behindbars(base_size = 14, base_color = "black") + 
-        scale_y_continuous(label = scales::comma) +
-        scale_x_date(breaks = scales::pretty_breaks(n = 6)) + 
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) 
-}
-
-plot_yearly_change <- function(dat, metric) {
-    dat %>%
-        filter(Measure == metric) %>%
+## CREAT PLOTTING FUNCTION - works for a single metric
+plot_lags <- function(dat) {
+    transformed_dat <- dat %>%
         arrange(Date) %>%
         mutate(lag = Val - lag(Val)) %>%
         mutate(lag = ifelse(lag < 0, 0, lag),
@@ -48,15 +32,30 @@ plot_yearly_change <- function(dat, metric) {
             str_detect(metric, ".Active")  ~ Val,
             TRUE ~ lag
         )) %>%
-        mutate(rollavg_weeklycase = zoo::rollmean(val_to_show, k = 3, fill = NA)) %>%
+        mutate(rollavg_weeklycase = zoo::rollmean(val_to_show, k = 3, fill = NA))
+    plot <- transformed_dat %>%
         ggplot() + 
         geom_line(aes(x = week, y = rollavg_weeklycase, color = year, ), stat = "identity") + 
         theme_behindbars(base_size = 14, base_color = "black") + 
         scale_y_continuous(label = scales::comma) +
         theme(legend.position = "right", legend.title = element_blank()) 
+    return(plot)
 }
 
-agg_week_out %>%
-    filter(State == "California") %>%
-    plot_yearly_change(metric = "Residents.Confirmed")
+## GENERATE PLOTS FOR EACH STATE FOR A GIVEN METRIC
+create_state_plots <- function(dat, metric) {
+    dat %>%
+        filter(Measure == metric) %>%
+        split(.$State) %>%
+        imap(function(dat, State) {
+            plot_lags(dat)
+        }) 
+}
 
+## TO DO 
+# - add title
+# - add metric indicator 
+# - save plots somewhere 
+
+agg_week_out %>%
+    create_state_plots(metric = "Residents.Confirmed")
