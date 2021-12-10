@@ -61,14 +61,21 @@ out <- jails %>%
 out_bars <- jails_pct_increase %>%
     filter(Date == as.Date("2021-12-07")) %>%
     ggplot(aes(x = Name, y = Residents.Pct.Increase.Active, fill = Name)) + 
-    geom_bar(stat = "identity") + 
+    geom_bar(stat = "identity") +    
     coord_flip() + 
     scale_y_continuous(labels = scales::percent) + 
     labs(y = "Increase in active COVID-19 cases since 10/15/21", x = "") + 
-    theme_behindbars(base_size = 18, base_color = "black") + 
+    theme_behindbars(base_size = 18, base_color = "black") +
     scale_fill_bbdiscrete() + 
     theme(legend.position = "none",
           legend.title = element_blank()) 
     
 ggsave("jails_pct_increase_bars.png", out_bars, width = 10, height = 5)
+ggsave("jails_pct_increase_bars_wide.svg", out_bars, width = 10, height = 5.5)
+ggsave("jails_pct_increase_bars.svg", out_bars, width = 8.5, height = 5.5)
+
+
+
+
+
 ggsave("jails_active_lines.png", out, width = 10, height = 5)
