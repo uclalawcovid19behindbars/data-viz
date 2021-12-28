@@ -20,6 +20,8 @@ track_recent_covid_increases <- function(
     arrange_by = "pct_increase",
     write_data = F) {
     
+    date <- Sys.Date()
+    
     scrape_df <- read_scrape_data(T, T)
     state_df <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/historical-data/historical_state_counts.csv")
     latest_scrape_date <-  max(scrape_df$Date)
@@ -28,13 +30,14 @@ track_recent_covid_increases <- function(
     fac_data <- scrape_df %>%
         filter(!(stringr::str_detect(Name, "(?i)state") & stringr::str_detect(Name, "(?i)wide"))) %>%
         filter(Date >= delta_start_date) %>%
+        # filter(State == "North Carolina") %>%
         group_by(Name, State) %>%
         mutate(start_val = first(!!sym(metric)),
                last_val = last(!!sym(metric)),
                raw_change = last_val - start_val,
                pct_increase = (raw_change / start_val)*100) %>%
         distinct(Name, State, start_val, last_val, raw_change, pct_increase) %>% 
-        filter(start_val > 0) 
+        filter(start_val > 1) 
     keep_facs_pct_increase <- fac_data %>%
         arrange(desc(pct_increase), Name) %>% 
         mutate(metric_arrange = "pct_increase") %>% 
@@ -70,8 +73,8 @@ track_recent_covid_increases <- function(
         distinct(State, .keep_all = TRUE)
     
     if(write_data) {
-        write_csv(keep_facs, glue('~/Desktop/highest_fac_increases_{metric}.csv'))
-        write_csv(keep_states, glue("~/Desktop/highest_state_increases_{metric}.csv"))
+        write_csv(keep_facs, glue('~/Desktop/highest_fac_increases_{metric}_{date}.csv'))
+        write_csv(keep_states, glue("~/Desktop/highest_state_increases_{metric}_{date}.csv"))
     }
     
     out <- lst(facilities = keep_facs, 
