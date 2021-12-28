@@ -36,8 +36,8 @@ track_recent_covid_increases <- function(
                last_val = last(!!sym(metric)),
                raw_change = last_val - start_val,
                pct_increase = (raw_change / start_val)*100) %>%
-        distinct(Name, State, start_val, last_val, raw_change, pct_increase) %>% 
-        filter(start_val > 1) 
+        distinct(Facility.ID, Name, State, start_val, last_val, raw_change, pct_increase) %>% 
+        filter(start_val > 3) 
     keep_facs_pct_increase <- fac_data %>%
         arrange(desc(pct_increase), Name) %>% 
         mutate(metric_arrange = "pct_increase") %>% 
