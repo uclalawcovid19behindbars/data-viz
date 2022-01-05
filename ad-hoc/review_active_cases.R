@@ -16,6 +16,7 @@ all_active <- all_data %>%
     # group by each facility and each month
     group_by(Facility.ID, Month) %>%
     # only get the first monthly observation for each facility
+    arrange(Facility.ID, Date) %>%
     filter(1:n() == 1) %>%
     # only get data that fall within these date ranges
     filter(Month >= ymd("2021-04-01")) %>%
