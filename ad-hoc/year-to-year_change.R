@@ -9,23 +9,30 @@ covid_suffixes <- c(
 covid_suff <- paste(covid_suffixes, collapse = "|")
 
 ## TRANSFORM DATA
-agg_week_out <- agg_week %>%
-    mutate(year = as.character(lubridate::year(Date)),
-           week = lubridate::week(Date),
-           month = lubridate::month(Date, label = T),
-           ) %>% 
-    filter(stringr::str_detect(Measure, covid_suff)) %>%
-    group_by(State, Measure) %>%
-    arrange(Date) %>% 
-    mutate(rollavg_measure = zoo::rollmean(Val, k = 3, fill = NA)) %>%
-    ungroup() %>%
-    arrange(week)
+# agg_week_out <- agg_week %>%
+#     mutate(year = as.character(lubridate::year(Date)),
+#            week = lubridate::week(Date),
+#            month = lubridate::month(Date, label = T),
+#            ) %>% 
+#     filter(stringr::str_detect(Measure, covid_suff)) %>%
+#     group_by(State, Measure) %>%
+#     arrange(Date) %>% 
+#     mutate(rollavg_measure = zoo::rollmean(Val, k = 3, fill = NA)) %>%
+#     ungroup() %>%
+#     arrange(week)
 
 ## 
 # State, metric, data, plot, perc_increase_since_sept
 # Alabama, res.confirmed, 
-create_plotting_vars <- function(dat) {
+create_plotting_vars <- function(dat, state, metric) {
     transformed_dat <- dat %>%
+        filter(Measure == metric,
+               State == state,
+               ) %>%
+        mutate(year = as.character(lubridate::year(Date)),
+               week = lubridate::week(Date),
+               month = lubridate::month(Date, label = T),
+        ) %>%
         arrange(Date) %>%
         mutate(lag = Val - lag(Val)) %>%
         mutate(lag = ifelse(lag < 0, 0, lag),
@@ -52,10 +59,23 @@ plot_lags <- function(dat) {
         scale_y_continuous(label = scales::comma) +
         scale_x_continuous(breaks = dat$week, labels = dat$month, n.breaks = 12) + 
         # scale_x_date(date_breaks = "1 month", date_labels = "%b") + 
-        theme(legend.position = "right", legend.title = element_blank()) + 
-        labs(title = paste(unique(State), unique(Measure)))  
+        theme(legend.position = "right", legend.title = element_blank()) #+ 
+        # labs(title = paste(unique(State), unique(Measure)))  
     return(plot)
 }
+
+## TESTING
+agg_week %>% 
+    create_plotting_vars(., 
+                         state = "New York",
+                         metric = "Residents.Confirmed") %>%
+    plot_lags()
+
+############################################################
+##########
+##########   Don't think the stuff below is helpful!
+##########
+############################################################
 
 ## GENERATE PLOTS FOR EACH STATE FOR A GIVEN METRIC
 create_state_plots <- function(dat, metric) {
@@ -68,7 +88,6 @@ create_state_plots <- function(dat, metric) {
         }) 
 }
 
-## TESTING
 metric <- "Residents.Confirmed"
 testing_dat <- agg_week_out %>% 
     filter(Measure == metric) %>%
@@ -82,6 +101,9 @@ dat <- testing_dat[[1]]
 # - save plots somewhere 
 # - add flag for winter spike starting 2021
 # - add parameter to start_date, end_date
+
+dat %>%
+    plot_lags()
 
 agg_week_out %>%
     create_state_plots(metric = "Residents.Confirmed")
