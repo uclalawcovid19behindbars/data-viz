@@ -64,12 +64,35 @@ plot_lags <- function(dat) {
     return(plot)
 }
 
-## TESTING
+## GENERATE PLOTS
+## TO DO: check vaccination rates for these states
+###       check illinois
+###       add graph titles
 agg_week %>% 
     create_plotting_vars(., 
-                         state = "New York",
+                         state = "ICE",
+                         metric = "Residents.Active") %>%
+    plot_lags()
+
+ggsave("~/Desktop/ICE_res_active.png", width = 15, height = 8)
+
+agg_week %>% 
+    create_plotting_vars(., 
+                         state = "Connecticut",
                          metric = "Residents.Confirmed") %>%
     plot_lags()
+
+ggsave("~/Desktop/CT_res_confirmed.png", width = 15, height = 8)
+
+agg_week %>% 
+    create_plotting_vars(., 
+                         state = "Maryland",
+                         metric = "Staff.Confirmed") %>%
+    plot_lags()
+
+ggsave("~/Desktop/MD_staff_confirmed.png", width = 15, height = 8)
+
+
 
 ############################################################
 ##########
