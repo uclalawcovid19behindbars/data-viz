@@ -2,7 +2,10 @@ library(tidyverse)
 library(behindbarstools)
 library(scales)
 
+## read in data
 df <- read_scrape_data(all_dates = TRUE)
+hist_state <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/historical-data/historical_state_counts.csv")
+
 
 ## for data look-up purposes, only keep facs with non-NA values for res.active
 active_df <- df %>%
@@ -59,7 +62,13 @@ ggsave("outbreaks_overtime.png", outbreaks_overtime, width = 7, height = 5)
 
 # ------------------------------------------------------------------------------
 
-## california
+## state-specific graphs
+
+# ------------------------------------------------------------------------------
+
+
+# ------------------------------------------------------------------------------
+# california
 ca_df <- df %>% 
     filter(Facility.ID %in% c(
         83,
@@ -94,11 +103,27 @@ ca_plot <- ca_df %>%
 ggsave("ca_omicron.png", ca_plot, width = 7, height = 5)
 
 
-##illinois
+# ------------------------------------------------------------------------------
+# illinois
 
+daily_il_plot <- hist_state %>% 
+    filter(State == "Illinois") %>%
+    ## uncomment line below to show all dates
+    filter(Date > as.Date("2021-11-01")) %>%
+    ggplot() + 
+    geom_bar(aes(x = Date, y = Residents.Active), stat = "identity") + 
+    theme_behindbars(base_size = 14, base_color = "black") + 
+    scale_y_continuous(label = scales::comma) +
+    theme(legend.position = "right", legend.title = element_blank()) + 
+    scale_fill_manual(values = c("#9DC183", "#664d60", "#D7790F")) + 
+    scale_x_date(breaks = scales::pretty_breaks(n = 12)) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
+    labs(title = "COVID Daily Cases in Illinois Prisons", 
+         y = "Reported Active Cases")
+ggsave("illinois_daily.png", daily_il_plot, width = 7, height = 5)
 
-
-## bop
+# ------------------------------------------------------------------------------
+# BOP
 bop_df <- df %>% 
     filter(Facility.ID %in% c(
         2433,
