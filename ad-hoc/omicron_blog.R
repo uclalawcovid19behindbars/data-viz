@@ -68,7 +68,7 @@ ggsave("outbreaks_overtime.png", outbreaks_overtime, width = 7, height = 5)
 
 
 # ------------------------------------------------------------------------------
-# california
+# california incarcerated people 
 ca_df <- df %>% 
     filter(Facility.ID %in% c(
         83,
@@ -102,6 +102,36 @@ ca_plot <- ca_df %>%
     scale_color_manual(values = c("#fee6ce", "#fdae6b", "#e6550d"))
 ggsave("ca_omicron.png", ca_plot, width = 7, height = 5)
 
+
+# ------------------------------------------------------------------------------
+# california staff 
+ca_staff_df <- df %>% 
+    filter(Facility.ID %in% c(
+        2089,
+        91,
+        92,
+        141,
+        99,
+        147
+    )) %>% 
+    filter(!is.na(Staff.Active)) 
+
+## california plot
+ca_plot <- ca_staff_df %>%
+    mutate(Label = str_to_title(Name),
+           Label = str_replace(Label, "Cdcr Cchcs Worksite - Sacramento County", "Sacramento County CDCR Worksite"),
+           ) %>%
+    ggplot(aes(x = Date, y = Staff.Active)) + 
+    geom_line(size = 0.6, color = "#fee6ce") + 
+    geom_point(color = "#fdae6b", size = 0.6) + 
+    facet_wrap(~Label, nrow = 2, scales = "free") + 
+    scale_x_date(breaks = pretty_breaks(n = 3), label = date_format(format = "%b '%y")) + 
+    theme_behindbars(base_size = 12) + 
+    labs(y = "Active cases among prison staff") + 
+    theme(strip.background = element_blank(), 
+          legend.title = element_blank(), 
+          legend.position = "top")
+ggsave("ca_staff_omicron.png", ca_plot, width = 8, height = 5)
 
 # ------------------------------------------------------------------------------
 # illinois
