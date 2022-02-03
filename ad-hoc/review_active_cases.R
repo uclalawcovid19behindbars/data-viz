@@ -13,8 +13,12 @@ parser$add_argument(
     help="Date to start the active case analysis should be YYYY-MM-DD format")
 parser$add_argument(
     "-en", "--end",
-    default = as.character(floor_date(Sys.Date(), unit = "month")),
+    default = as.character(round_date(Sys.Date(), unit = "day")),
     help="Date to start the active case analysis should be YYYY-MM-DD format")
+parser$add_argument(
+    "-un", "--unit",
+    default = "month",
+    help="How to round the data. Should be either 'week' or 'month'")
 
 args <- parser$parse_args()
 
@@ -27,15 +31,15 @@ all_active <- all_data %>%
     # remove anything with missing data
     na.omit() %>%
     # for each date floor to the nearest month
-    mutate(Month = floor_date(Date, unit = "month")) %>%
+    mutate(Month = floor_date(Date, unit = args$unit)) %>%
     # group by each facility and each month
     group_by(Facility.ID, Month) %>%
     # only get the first monthly observation for each facility
     arrange(Facility.ID, Date) %>%
     filter(1:n() == 1) %>%
     # only get data that fall within these date ranges
-    filter(Month >= ymd(args$start)) %>%
-    filter(Month <= ymd(args$end)) %>%
+    filter(Date >= ymd(args$start)) %>%
+    filter(Date <= ymd(args$end)) %>%
     # only keep facilities that have 10 months of observations
     group_by(Facility.ID) %>%
     mutate(nmonth = n()) %>%
@@ -52,9 +56,11 @@ plt1 <- all_active %>%
     group_by(Month) %>%
     summarize(Residents.Active = sum(Residents.Active)) %>%
     ggplot(aes(x=Month, y = Residents.Active)) +
-    geom_col(fill = "#D7790F", alpha = .95) +
+    geom_line(color = "#D7790F", size = 1.5) +
+    geom_point(color = "#D7790F", size = 3) +
     theme_behindbars() +
-    labs(y="Incarcerated People with\nActive Covid Cases")
+    labs(y="Incarcerated People with\nActive Covid Cases") +
+    ylim(c(0,NA))
 
 ggsave("active_case_trends.svg", plt1, width = 10, height = 8)
 ggsave("active_case_trends.png", plt1, width = 10, height = 8)
