@@ -96,6 +96,8 @@ outbreaks_overtime <- pct_outbreak %>%
     labs(y = "% of federal prisons with outbreak",
          title = "Nearly three quarters of all federal prisons\nare currently experiencing a COVID outbreak")
 ggsave("outbreaks_overtime.png", outbreaks_overtime, width = 7, height = 5)
+ggsave("outbreaks_overtime.jpg", outbreaks_overtime, width = 7, height = 5)
+
 
 # ------------------------------------------------------------------------------
 
@@ -141,6 +143,7 @@ ca_plot <- ca_df %>%
           legend.position = "top") + 
     scale_color_manual(values = c("#fee6ce", "#fdae6b", "#e6550d"))
 ggsave("ca_omicron.png", ca_plot, width = 10, height = 6)
+ggsave("ca_omicron.jpg", ca_plot, width = 10, height = 6)
 
 
 # ------------------------------------------------------------------------------
@@ -173,6 +176,7 @@ ca_staff <- ca_staff_df %>%
           legend.title = element_blank(), 
           legend.position = "top")
 ggsave("ca_staff_omicron.png", ca_staff, width = 10, height = 6)
+ggsave("ca_staff_omicron.jpg", ca_staff, width = 10, height = 6)
 
 # ------------------------------------------------------------------------------
 # illinois
@@ -192,6 +196,8 @@ daily_il_plot <- hist_state %>%
     labs(title = "COVID Daily Cases in Illinois Prisons", 
          y = "Reported Active Cases")
 ggsave("illinois_daily.png", daily_il_plot, width = 7, height = 5)
+ggsave("illinois_daily.jpg", daily_il_plot, width = 7, height = 5)
+
 
 # ------------------------------------------------------------------------------
 # BOP
@@ -234,6 +240,8 @@ bop_plot <- bop_df %>%
           legend.position = "top") + 
     scale_color_manual(values = c("#fee6ce", "#fdae6b", "#e6550d"))
 ggsave("bop_omicron.png", bop_plot, width = 10, height = 6)
+ggsave("bop_omicron.jpg", bop_plot, width = 10, height = 6)
+
 
 # ------------------------------------------------------------------------------
 # michigan 
