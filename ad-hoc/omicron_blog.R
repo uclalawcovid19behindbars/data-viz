@@ -70,6 +70,19 @@ agg_dat %>%
     summarise(ntl_sum = sum(Count),
               n = sum(Reporting))
 
+## How do Dec '21 - Jan '22 deaths compare to the rest of 2021?
+agg_dat_monthly <- calc_aggregate_counts(all_dates = TRUE, week_grouping = FALSE) 
+
+monthly_deaths_over_time <- agg_dat_monthly %>% 
+    filter(Measure == "Residents.Deaths") %>% 
+    select(Date, Count) %>%
+    mutate(lag_count = lag(Count),
+           lag_change = Count - lag_count)
+p <- ggplot(monthly_deaths_over_time, aes(Date, lag_change)) +
+    geom_col()
+ggplotly(p)
+
+
 # ------------------------------------------------------------------------------
 
 # Share of facilities with outbreaks over time 
@@ -80,7 +93,8 @@ outbreaks_overtime <- pct_outbreak %>%
     scale_y_continuous(limits = c(0, 1), labels = percent) +
     scale_x_date(breaks = pretty_breaks(n = 6), label = date_format(format = "%b '%y")) +
     theme_behindbars(base_size = 16, base_color = "black") + 
-    labs(y = "% of federal prisons with COVID outbreak")
+    labs(y = "% of federal prisons with outbreak",
+         title = "Nearly three quarters of all federal prisons\nare currently experiencing a COVID outbreak")
 ggsave("outbreaks_overtime.png", outbreaks_overtime, width = 7, height = 5)
 
 # ------------------------------------------------------------------------------
@@ -119,13 +133,14 @@ ca_plot <- ca_df %>%
     geom_point(aes(color = outbreak_), size = 0.6) + 
     facet_wrap(~Label, nrow = 2, scales = "free") + 
     scale_x_date(breaks = pretty_breaks(n = 3), label = date_format(format = "%b '%y")) + 
-    theme_behindbars(base_size = 12) + 
-    labs(y = "Active cases among incarcerated people") + 
+    theme_behindbars(base_size = 16, base_color = "black") + 
+    labs(y = "Active cases among incarcerated people",
+         title = "COVID outbreaks in California state prisons") + 
     theme(strip.background = element_blank(), 
           legend.title = element_blank(), 
           legend.position = "top") + 
     scale_color_manual(values = c("#fee6ce", "#fdae6b", "#e6550d"))
-ggsave("ca_omicron.png", ca_plot, width = 8, height = 5)
+ggsave("ca_omicron.png", ca_plot, width = 10, height = 6)
 
 
 # ------------------------------------------------------------------------------
@@ -134,15 +149,15 @@ ca_staff_df <- df %>%
     filter(Facility.ID %in% c(
         2089,
         91,
-        92,
+        # 92,
         141,
-        99,
+        # 99,
         147
     )) %>% 
     filter(!is.na(Staff.Active)) 
 
 ## california plot
-ca_plot <- ca_staff_df %>%
+ca_staff <- ca_staff_df %>%
     mutate(Label = str_to_title(Name),
            Label = str_replace(Label, "Cdcr Cchcs Worksite - Sacramento County", "Sacramento County CDCR Worksite"),
            ) %>%
@@ -151,12 +166,13 @@ ca_plot <- ca_staff_df %>%
     geom_point(color = "#fdae6b", size = 0.6) + 
     facet_wrap(~Label, nrow = 2, scales = "free") + 
     scale_x_date(breaks = pretty_breaks(n = 3), label = date_format(format = "%b '%y")) + 
-    theme_behindbars(base_size = 12) + 
-    labs(y = "Active cases among prison staff") + 
+    theme_behindbars(base_size = 16, base_color = "black") + 
+    labs(y = "Active cases among prison staff",
+         title = "COVID outbreaks among California state prison staff members")  + 
     theme(strip.background = element_blank(), 
           legend.title = element_blank(), 
           legend.position = "top")
-ggsave("ca_staff_omicron.png", ca_plot, width = 8, height = 5)
+ggsave("ca_staff_omicron.png", ca_staff, width = 10, height = 6)
 
 # ------------------------------------------------------------------------------
 # illinois
@@ -167,7 +183,7 @@ daily_il_plot <- hist_state %>%
     filter(Date > as.Date("2021-11-01")) %>%
     ggplot() + 
     geom_bar(aes(x = Date, y = Residents.Active), stat = "identity") + 
-    theme_behindbars(base_size = 14, base_color = "black") + 
+    theme_behindbars(base_size = 16, base_color = "black") + 
     scale_y_continuous(label = scales::comma) +
     theme(legend.position = "right", legend.title = element_blank()) + 
     scale_fill_manual(values = c("#9DC183", "#664d60", "#D7790F")) + 
@@ -184,8 +200,8 @@ bop_df <- df %>%
         2433,
         2450,
         2330,
-        2379,
-        2369,
+        # 2379,
+        # 2369,
         2445
     )) %>% 
     filter(!is.na(Residents.Active)) %>%
@@ -210,13 +226,14 @@ bop_plot <- bop_df %>%
     geom_point(aes(color = outbreak_), size = 0.6) + 
     facet_wrap(~Label, nrow = 3, scales = "free") + 
     scale_x_date(breaks = pretty_breaks(n = 3), label = date_format(format = "%b '%y")) + 
-    theme_behindbars(base_size = 12) + 
-    labs(y = "Active cases among incarcerated people") + 
+    theme_behindbars(base_size = 16, base_color = "black") + 
+    labs(y = "Active cases among incarcerated people",
+         title = "COVID outbreaks in BOP prisons") + 
     theme(strip.background = element_blank(), 
           legend.title = element_blank(), 
           legend.position = "top") + 
     scale_color_manual(values = c("#fee6ce", "#fdae6b", "#e6550d"))
-ggsave("bop_omicron.png", bop_plot, width = 9, height = 5)
+ggsave("bop_omicron.png", bop_plot, width = 10, height = 6)
 
 # ------------------------------------------------------------------------------
 # michigan 
@@ -227,6 +244,17 @@ mi <- df %>%
 
 behindbarstools::plot_recent_fac_increases(scrape_df = mi, 
                                            metric = "Staff.Confirmed")
+mi_hist <- hist_state %>%
+    filter(State == "Michigan")
+
+m <- ggplot(mi_hist, aes(Date, Residents.Confirmed)) +
+    geom_col()
+ggplotly(m)
+
+
+a <- ggplot(mi_hist, aes(Date, Residents.Active)) +
+    geom_col()
+ggplotly(a)    
 
 
 # ------------------------------------------------------------------------------
