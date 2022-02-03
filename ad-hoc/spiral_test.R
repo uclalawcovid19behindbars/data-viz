@@ -9,6 +9,12 @@ library(paletteer)
 library(lubridate)
 library(behindbarstools)
 
+## TO DO: 
+## try to change colors -- tried, didn't work 
+## try north kern -- good
+## remove annotation (add in figma)
+## add year labels (add in figma)
+
 # grab all our data
 hist_data <- read_scrape_data(all_dates = TRUE)
 
@@ -30,10 +36,11 @@ sub_active_data <- hist_data %>%
 # Set value for increment size (basically controls the tightness of the spiral,
 # bigger numbers => a looser spiral) havent  figured out a good way to tweak
 # this other than manually
-spiralincrement <- .55
+spiralincrement <- .15
 
 # select your facility of interest by ID
-target_id <- #1846
+#target_id <- 1846
+target_id <- 2433
 
 data <- sub_active_data %>%
     filter(Facility.ID == target_id) %>%
@@ -110,7 +117,8 @@ geom_segment_straight <- function(...) {
     return(new_layer)
 }
 
-ggplot()+
+
+plot_out <- ggplot()+
     #Need to plot each year separately, to 'trick' coord_polar to make a spiral, not a single
     #loop
     geom_rect(data=data %>% filter(year==2020 & ! is.na(cases_roll)),
@@ -135,25 +143,30 @@ ggplot()+
                           colour="black")+
     scale_x_continuous(breaks=c(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334),
                        labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
-                                "Oct", "Nov", "Dec"))+
+                                "Oct", "Nov", "Dec")) +
     scale_colour_paletteer_c("viridis::rocket", direction=-1)+
     scale_fill_paletteer_c("viridis::rocket", direction=-1)+
+    # scale_color_bbcontinous() + 
     coord_polar()+
-    theme_void()+
+    theme_void() +
     theme(panel.grid.major.x=element_line(colour="Grey90"),
           axis.text.x=element_text(colour="Grey60"),
-          text=element_text(family="Lato"), plot.title=element_text(face="bold", size=rel(1.8)),
-          plot.title.position = "plot", plot.caption.position = "plot") +
+          text=element_text(family="Lato"), 
+          plot.title=element_text(face="bold", size=rel(1.8)),
+          plot.title.position = "plot", 
+          plot.caption.position = "plot") #+
     #Add low key legend for a bit of context
-    geom_segment(aes(y=arrowmin, yend=arrowmin+max_cases, x=arrowxpos, xend=arrowxpos), colour="Grey30",
-                 arrow = arrow(length=unit(0.20,"cm"), ends="both", type = "closed"))+
+    # geom_segment(aes(y=arrowmin, yend=arrowmin+max_cases, x=arrowxpos, xend=arrowxpos), colour="Grey30",
+    #              arrow = arrow(length=unit(0.20,"cm"), ends="both", type = "closed")) +
     #Will need to manually tweak the placement of this annotation
-    annotate("text", x=arrowxpos+3, y=max_cases,
-             label=str_c(max_cases, " active\ncases"), hjust=0, colour="Grey30",
-             size=rel(2.5), family="Lato")+
-    labs(title="COVID Outbreaks in Cook County Jails",
-         subtitle="COVID numbers hit record high among those\nincarcerated in Cook County Jails",
-         caption="UCLA Law COVID Behind Bars")
+    # annotate("text", x=arrowxpos+3, y=max_cases,
+    #          label=str_c(max_cases, " active\ncases"), hjust=0, colour="Grey30",
+    #          size=rel(2.5), family="Lato") #+
+    # labs(title="COVID Outbreaks in Cook County Jails",
+    #      subtitle="COVID numbers hit record high among those\nincarcerated in Cook County Jails",
+    #      caption="UCLA Law COVID Behind Bars")
+
+ggsave("north_kern_spiral.svg", plot_out, width = 9, height = 5)
 
 ggplot(data, aes(x=Date, y = cases_roll)) +
     geom_line()
