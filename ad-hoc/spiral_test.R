@@ -17,6 +17,9 @@ library(behindbarstools)
 
 # grab all our data
 hist_data <- read_scrape_data(all_dates = TRUE)
+hist_state_counts <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/historical-data/historical_state_counts.csv")
+hist_data_ice <- hist_state_counts %>%
+    filter(State == "ICE")
 
 theme_custom <- function() {
     theme_classic() %+replace%
@@ -29,48 +32,112 @@ theme_custom <- function() {
 }
 
 # only look at the data where we have active cases
-sub_active_data <- hist_data %>%
-    select(Jurisdiction, Facility.ID, Name, Date, State, Residents.Active) %>%
+# sub_active_data <- hist_data %>%
+    # select(Jurisdiction, Facility.ID, Name, Date, State, Residents.Active) %>%
+    # na.omit()
+sub_active_data <- hist_data_ice %>%
+    select(Date, State, Residents.Active) %>%
     na.omit()
 
 # Set value for increment size (basically controls the tightness of the spiral,
 # bigger numbers => a looser spiral) havent  figured out a good way to tweak
 # this other than manually
-spiralincrement <- .15
+# spiralincrement <- .15
+spiralincrement <- .8
 
 # select your facility of interest by ID
 #target_id <- 1846
 target_id <- 2433
 
-data <- sub_active_data %>%
-    filter(Facility.ID == target_id) %>%
-    right_join(tibble(
-        Date=seq.Date(min(.$Date), max(.$Date), "day"))) %>%
-    arrange(Date) %>%
-    mutate(cases_roll = approx(
-        as.numeric(Date), Residents.Active, xout = as.numeric(Date))$y) %>%
-    # do rolling average to smooth things out
-    mutate(cases_roll2 = roll_mean(cases_roll, 7, align="center", fill=NA)) %>%
-    mutate(cases_roll = ifelse(is.na(cases_roll2), cases_roll, cases_roll2)) %>%
-    mutate(year = year(Date)) %>%
-    group_by(year) %>%
-    mutate(yeardays=as.numeric(difftime(
-        Date ,as.Date(paste0(year, "-01-01")) , units = c("days")))) %>%
-    ungroup() %>%
-    mutate(
-           #Create variable to represent the base of each bar
-           # change the number to tighten/relax the spiral
-           increment=spiralincrement*c(1:n()),
-           #Add cases to the base to get the top of each bar
-           incrementcases=increment+cases_roll)
+make_spiral_plot <- function(dat, spiralincrement) {
+    data <- dat %>%
+        # filter(Facility.ID == target_id) %>%
+        right_join(tibble(
+            Date=seq.Date(min(.$Date), max(.$Date), "day"))) %>%
+        arrange(Date) %>%
+        mutate(cases_roll = approx(
+            as.numeric(Date), Residents.Active, xout = as.numeric(Date))$y) %>%
+        # do rolling average to smooth things out
+        mutate(cases_roll2 = roll_mean(cases_roll, 7, align="center", fill=NA)) %>%
+        mutate(cases_roll = ifelse(is.na(cases_roll2), cases_roll, cases_roll2)) %>%
+        mutate(year = year(Date)) %>%
+        group_by(year) %>%
+        mutate(yeardays=as.numeric(difftime(
+            Date ,as.Date(paste0(year, "-01-01")) , units = c("days")))) %>%
+        ungroup() %>%
+        mutate(
+            #Create variable to represent the base of each bar
+            # change the number to tighten/relax the spiral
+            increment=spiralincrement*c(1:n()),
+            #Add cases to the base to get the top of each bar
+            incrementcases=increment+cases_roll)
+    max_cases <- tail(data$cases_roll, n=1)
+    #Pull out a couple of parameters to control the positioning of the segments
+    seg2021 <- data$increment[data$year==2020 & data$yeardays==364]-spiralincrement*0.5
+    seg2122 <- data$increment[data$year==2021 & data$yeardays==360]-spiralincrement*0.5
+    arrowmin <- max(data$increment[data$year==2022 & !is.na(data$cases_roll)])+spiralincrement*4
+    arrowxpos <- max(data$yeardays[data$year==2022 & !is.na(data$cases_roll)])+4
+    plot_out <- ggplot()+
+        ##Need to plot each year separately, to 'trick' coord_polar to make a spiral, not a single
+        ##loop
+        geom_rect(data=data %>% filter(year==2020 & ! is.na(cases_roll)),
+                  aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=incrementcases,
+                      fill=cases_roll), show.legend=FALSE)+
+        geom_rect(data=data %>% filter(year==2021 & ! is.na(cases_roll)),
+                  aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=incrementcases,
+                      fill=cases_roll), show.legend=FALSE)+
+        geom_rect(data=data %>% filter(year==2022 & ! is.na(cases_roll)),
+                  aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=incrementcases,
+                      fill=cases_roll), show.legend=FALSE)+
+        ## this part adds shading in the background by year
+        geom_rect(data=data %>% filter(year==2022 & ! is.na(cases_roll)),
+                  aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=max(incrementcases)), 
+                  alpha = .3,fill = "pink",
+                  show.legend=FALSE)+
+        geom_rect(data=data %>% filter(year==2021 & ! is.na(cases_roll)),
+                  aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=max(incrementcases)), 
+                  alpha = .3,fill = "blue",
+                  show.legend=FALSE)+
+        geom_rect(data=data %>% filter(year==2020 & ! is.na(cases_roll)),
+                  aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=max(incrementcases)), 
+                  alpha = .3,fill = "yellow",
+                  show.legend=FALSE)+
+        ## old stuff
+        geom_line(data=data %>% filter(year==2020 & ! is.na(cases_roll)),
+                  aes(x=yeardays, y=increment), colour="black")+
+        geom_line(data=data %>% filter(year==2021),
+                  aes(x=yeardays, y=increment), colour="black")+
+        geom_line(data=data %>% filter(year==2022 & yeardays<arrowxpos-3),
+                  aes(x=yeardays, y=increment), colour="black")+
+        #Add a couple of tiny segments to patch the holes in the baseline at the end of each year
+        geom_segment_straight(aes(x=363.5, xend=0.5, y=seg2021, yend=seg2021+2*spiralincrement),
+                              colour="black")+
+        geom_segment_straight(aes(x=363.5, xend=0.5, y=seg2122, yend=seg2122+2*spiralincrement),
+                              colour="black")+
+        scale_x_continuous(breaks=c(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334),
+                           labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
+                                    "Oct", "Nov", "Dec")) +
+        scale_colour_paletteer_c("viridis::rocket", direction=-1)+
+        scale_fill_paletteer_c("viridis::rocket", direction=-1)+
+        # scale_color_bbcontinous() + 
+        coord_polar()+
+        theme_void() +
+        theme(panel.grid.major.x=element_line(colour="Grey90"),
+              axis.text.x=element_text(colour="Grey60"),
+              text=element_text(family="Lato"), 
+              plot.title=element_text(face="bold", size=rel(1.8)),
+              plot.title.position = "plot", 
+              plot.caption.position = "plot") #+
+    return(plot_out)
+}
 
-max_cases <- tail(data$cases_roll, n=1)
+make_spiral_plot(sub_active_data, spiralincrement = 4)
+ggsave("ice_spiral.svg", width = 9, height = 5)
 
-#Pull out a couple of parameters to control the positioning of the segments
-seg2021 <- data$increment[data$year==2020 & data$yeardays==364]-spiralincrement*0.5
-seg2122 <- data$increment[data$year==2021 & data$yeardays==360]-spiralincrement*0.5
-arrowmin <- max(data$increment[data$year==2022 & !is.na(data$cases_roll)])+spiralincrement*4
-arrowxpos <- max(data$yeardays[data$year==2022 & !is.na(data$cases_roll)])+4
+
+make_spiral_plot(sub_active_data, spiralincrement = 4)
+ggsave("ice_spiral_background.svg", width = 9, height = 5)
+
 
 #Function borrowed from stackoverflow answer from truenbrand to draw annotations on a polar plot
 #https://stackoverflow.com/questions/66196451/draw-straight-line-between-any-two-point-when-using-coord-polar-in-ggplot2-r/66196752#66196752
@@ -118,43 +185,7 @@ geom_segment_straight <- function(...) {
 }
 
 
-plot_out <- ggplot()+
-    #Need to plot each year separately, to 'trick' coord_polar to make a spiral, not a single
-    #loop
-    geom_rect(data=data %>% filter(year==2020 & ! is.na(cases_roll)),
-              aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=incrementcases,
-                  fill=cases_roll), show.legend=FALSE)+
-    geom_rect(data=data %>% filter(year==2021 & ! is.na(cases_roll)),
-              aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=incrementcases,
-                  fill=cases_roll), show.legend=FALSE)+
-    geom_rect(data=data %>% filter(year==2022 & ! is.na(cases_roll)),
-              aes(xmin=yeardays, xmax=yeardays+1, ymin=increment, ymax=incrementcases,
-                  fill=cases_roll), show.legend=FALSE)+
-    geom_line(data=data %>% filter(year==2020 & ! is.na(cases_roll)),
-              aes(x=yeardays, y=increment), colour="black")+
-    geom_line(data=data %>% filter(year==2021),
-              aes(x=yeardays, y=increment), colour="black")+
-    geom_line(data=data %>% filter(year==2022 & yeardays<arrowxpos-3),
-              aes(x=yeardays, y=increment), colour="black")+
-    #Add a couple of tiny segments to patch the holes in the baseline at the end of each year
-    geom_segment_straight(aes(x=363.5, xend=0.5, y=seg2021, yend=seg2021+2*spiralincrement),
-                          colour="black")+
-    geom_segment_straight(aes(x=363.5, xend=0.5, y=seg2122, yend=seg2122+2*spiralincrement),
-                          colour="black")+
-    scale_x_continuous(breaks=c(0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334),
-                       labels=c("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep",
-                                "Oct", "Nov", "Dec")) +
-    scale_colour_paletteer_c("viridis::rocket", direction=-1)+
-    scale_fill_paletteer_c("viridis::rocket", direction=-1)+
-    # scale_color_bbcontinous() + 
-    coord_polar()+
-    theme_void() +
-    theme(panel.grid.major.x=element_line(colour="Grey90"),
-          axis.text.x=element_text(colour="Grey60"),
-          text=element_text(family="Lato"), 
-          plot.title=element_text(face="bold", size=rel(1.8)),
-          plot.title.position = "plot", 
-          plot.caption.position = "plot") #+
+
     #Add low key legend for a bit of context
     # geom_segment(aes(y=arrowmin, yend=arrowmin+max_cases, x=arrowxpos, xend=arrowxpos), colour="Grey30",
     #              arrow = arrow(length=unit(0.20,"cm"), ends="both", type = "closed")) +
@@ -167,6 +198,7 @@ plot_out <- ggplot()+
     #      caption="UCLA Law COVID Behind Bars")
 
 ggsave("north_kern_spiral.svg", plot_out, width = 9, height = 5)
+
 
 ggplot(data, aes(x=Date, y = cases_roll)) +
     geom_line()
