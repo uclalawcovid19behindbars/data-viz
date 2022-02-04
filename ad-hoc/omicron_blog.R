@@ -87,14 +87,15 @@ ggplotly(p)
 
 # Share of facilities with outbreaks over time 
 outbreaks_overtime <- pct_outbreak %>%
-    filter(n > 150) %>%
+    filter(n > 150,
+           Date != "2022-02-03") %>%
     ggplot(aes(x = Date, y = pct)) + 
     geom_line(size = 1.0, color = "#4C6788") + 
     scale_y_continuous(limits = c(0, 1), labels = percent) +
     scale_x_date(breaks = pretty_breaks(n = 6), label = date_format(format = "%b '%y")) +
     theme_behindbars(base_size = 16, base_color = "black") + 
-    labs(y = "% of federal prisons with outbreak",
-         title = "Nearly three quarters of all federal prisons\nare currently experiencing a COVID outbreak")
+    labs(y = "% of prisons with outbreak",
+         title = "Nearly three quarters of all prisons\nare currently experiencing a COVID outbreak")
 ggsave("outbreaks_overtime.png", outbreaks_overtime, width = 7, height = 5)
 ggsave("outbreaks_overtime.jpg", outbreaks_overtime, width = 7, height = 5)
 
