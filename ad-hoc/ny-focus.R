@@ -2,15 +2,19 @@ library(tidyverse)
 library(behindbarstools)
 library(skimr)
 
+### TO DO: 
+### CHANGE START DATE TO DECEMBER 1st, 2021
+### CHECK OVERCROWDING 
+
 scrape_df <- read_scrape_data(all_dates = TRUE, state = "New York")
 scrape_df <- scrape_df %>%
-    filter(Jurisdiction %in% c("county", "state"))
-delta_days = 14 
+    filter(Jurisdiction == "state")
 num_fac = 10
 date <- Sys.Date()
 state_df <- read_csv("https://raw.githubusercontent.com/uclalawcovid19behindbars/data/master/historical-data/historical_state_counts.csv")
 latest_scrape_date <-  max(scrape_df$Date)
-delta_start_date <- latest_scrape_date - lubridate::days(delta_days)
+# delta_start_date <- latest_scrape_date - lubridate::days(delta_days)
+delta_start_date <- "2021-12-01"
 
 run_ny_analysis <- function(scrape_df, metric) {
     fac_data <- scrape_df %>%
@@ -55,6 +59,7 @@ run_ny_analysis <- function(scrape_df, metric) {
 }
 
 ### examine results
+
 run_ny_analysis(scrape_df, metric = "Residents.Confirmed" )
 
 metrics <- c("Residents.Confirmed", "Staff.Confirmed", "Residents.Deaths", "Staff.Deaths")
