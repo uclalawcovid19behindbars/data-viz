@@ -72,14 +72,20 @@ greene %>% select(Date, active_df) %>% View()
 plot(greene$Date, greene$active_df)
 
 ## overcrowding? 
+## NB: though saved locally, this data file was generated via 
+## https://github.com/uclalawcovid19behindbars/covid19_behind_bars_scrapers/blob/master/production/historical_scrape/historical_scrapers/historical_new_york_population.R
+pop_df <- read_csv("~/UCLA/misc-data/NY_historical_pop_20210801.csv")
 
-pop <- scrape_df %>% 
-    filter(!is.na(Population.Feb20) | !is.na(Residents.Population)) %>%
+ny_pop_out <- scrape_df %>% 
     group_by(Name) %>%
     filter(Date == max(Date)) %>%
     ungroup() %>%
-    select(Date, Name, Population.Feb20, Residents.Population, Capacity) %>%
-    mutate(perc_full = Population.Feb20 / Capacity,
+    select(Date, Facility.ID, Capacity) %>%
+    left_join(pop_df, by = "Facility.ID") %>%
+    # select(Date, Name, Population.Feb20, Residents.Population, Capacity) %>%
+    mutate(perc_full = Residents.Population / Capacity,
            over_80 = ifelse(perc_full > .79, 1, 0)) %>%
     filter(!is.na(perc_full))
+
+table(ny_pop_out$over_80)
     
