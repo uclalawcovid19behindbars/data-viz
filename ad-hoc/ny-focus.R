@@ -2,10 +2,6 @@ library(tidyverse)
 library(behindbarstools)
 library(skimr)
 
-### TO DO: 
-### CHANGE START DATE TO DECEMBER 1st, 2021
-### CHECK OVERCROWDING 
-
 scrape_df <- read_scrape_data(all_dates = TRUE, state = "New York")
 scrape_df <- scrape_df %>%
     filter(Jurisdiction == "state")
@@ -66,3 +62,24 @@ metrics <- c("Residents.Confirmed", "Staff.Confirmed", "Residents.Deaths", "Staf
 out <- metrics %>%
     map(~ run_ny_analysis(metric = .x, 
                           scrape_df = scrape_df))
+
+### check greene CC
+
+greene <- scrape_df %>%
+    filter(Name == "GREENE CORRECTIONAL FACILITY") %>%
+    mutate(active_df = diff_roll_sum(Residents.Confirmed))
+greene %>% select(Date, active_df) %>% View()
+plot(greene$Date, greene$active_df)
+
+## overcrowding? 
+
+pop <- scrape_df %>% 
+    filter(!is.na(Population.Feb20) | !is.na(Residents.Population)) %>%
+    group_by(Name) %>%
+    filter(Date == max(Date)) %>%
+    ungroup() %>%
+    select(Date, Name, Population.Feb20, Residents.Population, Capacity) %>%
+    mutate(perc_full = Population.Feb20 / Capacity,
+           over_80 = ifelse(perc_full > .79, 1, 0)) %>%
+    filter(!is.na(perc_full))
+    
