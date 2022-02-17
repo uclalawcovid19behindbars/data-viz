@@ -88,4 +88,52 @@ ny_pop_out <- scrape_df %>%
     filter(!is.na(perc_full))
 
 table(ny_pop_out$over_80)
+
+## data viz ----------------------------------------------------------------
+## cases in prisons
+plotting_df <- scrape_df %>%
+    filter(Date > "2021-01-01") %>%
+    filter(Facility.ID %in% c(941,937, 914, 906, 908)) %>%
+    group_by(Facility.ID) %>%
+    mutate(Res.Act.Est = diff_roll_sum(Residents.Confirmed, Date)) %>%
+    mutate(rollavg = zoo::rollmean(Res.Act.Est, k = 3, fill = NA)) %>% 
+    mutate(rollavg = ifelse(rollavg < 0, 0, rollavg)) %>%
+    ungroup() %>%
+    mutate(Name = str_replace(Name, "CORRECTIONAL FACILITY", "CF"),
+           my_label = glue("{Name}-{Facility.ID}"))
+
+plotting_df %>%
+    filter(Date > "2021-11-15") %>% 
+    ggplot() + 
+    geom_line(aes(x = Date, y = rollavg, color = Name), size = 1) + 
+    theme_behindbars(base_size = 14,
+                     base_color = "black") + 
+    theme(legend.title = element_blank(),
+          legend.position = "top") +
+    scale_color_bbdiscrete() +
+    labs(title = "Omicron in New York State Prisons",
+         y = "Estimated Active COVID cases\namong incarcerated people",
+         x = "")
+ggsave("ny_prisons_omicron.svg", width = 9, height = 7)
+ggsave("ny_prisons_omicron.png", width = 9, height = 7)
+
+## state-wide staff cases
+scrape_df %>%
+    filter(Name == "STATEWIDE") %>%
+    mutate(Staff.Act.Est = diff_roll_sum(Staff.Confirmed, Date)) %>%
+    mutate(rollavg = zoo::rollmean(Staff.Act.Est, k = 5, fill = NA)) %>% 
+    mutate(rollavg = ifelse(rollavg < 0, 0, rollavg)) %>%
+    ggplot(aes(
+        x = Date, y = rollavg, color = Name, fill = Name)) +
+    geom_line(size = 1.5) +
+    geom_area(alpha = .5) +
+    theme_behindbars(base_size = 14, 
+                     base_color = "black") + 
+    scale_color_bbdiscrete() +
+    scale_fill_bbdiscrete() +
+    theme(legend.position = "none") +
+    labs(y = "Staff Estimated\nCOVID Cases") +    
+    ggtitle("Over 4,400 new cases among DOCCS staff since December 1, 2021")
+ggsave("ny_staff_omicron.svg", width = 9, height = 7)
+ggsave("ny_staff_omicron.png", width = 9, height = 7)
     
