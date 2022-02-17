@@ -1,6 +1,7 @@
 library(tidyverse)
 library(behindbarstools)
 library(skimr)
+library(glue)
 
 scrape_df <- read_scrape_data(all_dates = TRUE, state = "New York")
 scrape_df <- scrape_df %>%
@@ -112,9 +113,10 @@ plotting_df %>%
           legend.position = "top") +
     scale_color_bbdiscrete() +
     labs(title = "Omicron in New York State Prisons",
-         y = "Estimated Active COVID cases\namong incarcerated people",
+         y = "Estimated Active COVID cases among incarcerated people",
          x = "")
 ggsave("ny_prisons_omicron.svg", width = 9, height = 7)
+ggsave("ny_prisons_omicron_twitt.svg", width = 14, height = 7)
 ggsave("ny_prisons_omicron.png", width = 9, height = 7)
 
 ## state-wide staff cases
