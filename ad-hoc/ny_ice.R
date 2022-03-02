@@ -1,6 +1,7 @@
 library(tidyverse)
 library(behindbarstools)
 library(lubridate)
+library(scales)
 
 scrape_df <- read_scrape_data(all_dates = TRUE)
 ice_nys <- scrape_df %>%
@@ -141,6 +142,23 @@ pop_df <- tribble(
     "Orange County", 100, 79 , 144
 )
 
+ice_nys <- ice_nys %>%
+    mutate(Year = lubridate::year(Date)) %>%
+    mutate(Residents.Population = case_when(
+        Name == "ICE BUFFALO BATAVIA SERVICE PROCESSING CENTER" & 
+            Year == 2020 ~ 369,
+        Name == "ICE BUFFALO BATAVIA SERVICE PROCESSING CENTER" & 
+            Year == 2021 ~ 251,
+        Name == "ICE BUFFALO BATAVIA SERVICE PROCESSING CENTER" & 
+            Year == 2022 ~ 279,
+        Name == "ICE ORANGE COUNTY JAIL" & 
+            Year == 2020 ~ 100,
+        Name == "ICE ORANGE COUNTY JAIL" & 
+            Year == 2021 ~ 79,
+        Name == "ICE ORANGE COUNTY JAIL" & 
+            Year == 2022 ~ 144,
+    ))
+
 # graphs ------------------------------------------------------------------
 
 ## percent active infections
@@ -157,6 +175,7 @@ ice_nys %>%
     theme(legend.position = "none",
           legend.title = element_blank()) + 
     scale_y_continuous(labels = scales::percent_format(accuracy = 1))    
+ggsave("ny_ice_faceted.png", width = 9, height = 7)
 
 ## ice facilities compared to us overall
 ice_gen_compare %>%
@@ -168,9 +187,12 @@ ice_gen_compare %>%
     scale_color_bbdiscrete() +
     theme(legend.position="top") + 
     labs(title = "Comparison of ICE and US Population with Active Infections", 
-         y = "Percent of Population Actively Infected") +
+         y = "Reported Percent of Population Actively Infected") +
     scale_y_continuous(labels = scales::percent_format(accuracy = 1)) + 
     labs(color = "")
+ggsave("ny_ice_multiline.png", width = 11, height = 8)
+ggsave("ny_ice_multiline.svg", width = 11, height = 8)
+
 
 # deaths --> none reported 
 ice_nys %>% 
@@ -185,5 +207,31 @@ ice_nys %>%
     scale_color_bbdiscrete() +
     theme(legend.position = "none",
           legend.title = element_blank())  
+
+## worst outbreaks graph
+ice_nys %>%
+    filter(
+           Date > as.Date("2020-11-01"),
+           Name == "ICE BUFFALO BATAVIA SERVICE PROCESSING CENTER") %>% 
+    mutate(Label = ifelse(Name == "ICE BUFFALO BATAVIA SERVICE PROCESSING CENTER",
+                         "Batavia (Buffalo SPC)",
+                         Name),
+           outbreak_ = case_when(
+               Residents.Active / Residents.Population > 0.05 ~ "Worst outbreak (5+% actively infected)",
+               Residents.Active >= 5 ~ "Outbreak (5+ active cases)", 
+               TRUE ~ "No outbreak (<5 active cases)")) %>% 
+    ggplot(aes(x = Date, y = Residents.Active)) + 
+    geom_line(size = 0.6, color = "#fee6ce") + 
+    geom_point(aes(color = outbreak_), size = 1.5) + 
+    # facet_wrap(~Label, nrow = 2, scales = "free") + 
+    scale_x_date(breaks = pretty_breaks(n = 3), label = date_format(format = "%b '%y")) + 
+    theme_behindbars(base_size = 16, base_color = "black") + 
+    labs(y = "Reported Active cases among incarcerated people",
+         title = "COVID outbreaks at Buffalo Service Processing Center (Batavia)") + 
+    theme(strip.background = element_blank(), 
+          legend.title = element_blank(), 
+          legend.position = "top") + 
+    scale_color_manual(values = c("#fee6ce", "#fdae6b", "#e6550d"))
+ggsave("ny_ice_batavia.png", width = 9, height = 6)
 
 
